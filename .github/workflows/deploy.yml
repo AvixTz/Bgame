@@ -1,0 +1,59 @@
+name: deploy
+
+# Builds, checks and deploys the game to your server over SSH.
+# Runs on every push to main, or by hand (Actions -> deploy -> Run workflow).
+# Setup once: docs/DEPLOY.md. Secrets (Settings -> Secrets and variables -> Actions):
+#   DEPLOY_HOST         server address (IP or hostname)
+#   DEPLOY_USER         deploy            (the user created by deploy/setup-server.sh)
+#   DEPLOY_SSH_KEY      the PRIVATE key of the deploy key pair
+#   DEPLOY_KNOWN_HOSTS  output of: ssh-keyscan -p <port> <host>
+#   DEPLOY_PORT         optional, default 22
+# Variable (same page, "Variables" tab): DEPLOY_URL = https://your-game-domain/
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production     # add "required reviewers" to this environment to approve each deploy
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - run: npm run content:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: SSH key
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+          DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+        run: bash deploy/deploy.sh
+      - name: Clean up key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519

@@ -2,6 +2,11 @@
 
 Versions follow `MAJOR.MINOR.PATCH`. Each release is a git tag (`v0.2.0`) with a GitHub release.
 
+## Unreleased - deployment
+- Production deployment kit: nginx site with security headers and CSP, one-time server setup script,
+  atomic release deploy over SSH with rollback, GitHub Actions deploy workflow, docs/DEPLOY.md.
+- Fonts are self-hosted (@fontsource, Hebrew + Latin subsets): no request to Google on each visit.
+
 ## v0.6.0 - 2026-09-24 - "חכמים יותר"
 - New house at the front of the island (a school with a glowing light bulb): 105 richer words in 13
   domains, built from the "100 words" sheet (duplicates merged, a few meanings and examples fixed).

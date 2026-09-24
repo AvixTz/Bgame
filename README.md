@@ -39,16 +39,10 @@ npm run build      # static build into dist/
 
 ## Moving to your own server (production)
 
-The current build is a static site, so any web server works:
-
-```bash
-npm ci && npm run build
-rsync -av dist/ user@server:/var/www/bgame/
-```
-
-nginx: `root /var/www/bgame; try_files $uri /index.html;`, plus gzip/brotli for `.js`. HTTPS is required (speech and IndexedDB are more stable over HTTPS).
-
-The next production step, per the plan: a backend (Supabase or Postgres on your server) with a family → parent → child hierarchy, sync of `attempts` and `skills` from the device to the server, and weekly leagues. The data model is already built to allow this (`src/data/db.ts` and the docs).
+Full guide in Hebrew: **docs/DEPLOY.md**. In short: `deploy/setup-server.sh` prepares a Debian/Ubuntu server
+(nginx, HTTPS, a restricted `deploy` user), and `.github/workflows/deploy.yml` builds, tests and deploys every
+push to `main` over SSH into an atomic release folder (`deploy/rollback.sh` goes back). The site is static:
+no Node, PHP or database on the server; fonts are self-hosted and a strict CSP is set in `deploy/nginx/bgame.conf`.
 
 ## Structure
 

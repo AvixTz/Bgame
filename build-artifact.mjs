@@ -8,16 +8,13 @@ await build({
   logLevel: 'warn',
   base: './',
   plugins: [react()],
-  build: { outDir: out, emptyOutDir: true, chunkSizeWarningLimit: 5000, rollupOptions: { output: { inlineDynamicImports: true } } },
+  build: { outDir: out, emptyOutDir: true, chunkSizeWarningLimit: 5000, assetsInlineLimit: 100_000_000, rollupOptions: { output: { inlineDynamicImports: true } } },
 });
 const assets = readdirSync(`${out}/assets`);
 const js = readFileSync(`${out}/assets/${assets.find((f) => f.endsWith('.js'))}`, 'utf8').replace(/<\/script/gi, '<\\/script');
 const css = readFileSync(`${out}/assets/${assets.find((f) => f.endsWith('.css'))}`, 'utf8');
 const html = `<title>Bgame אי המוח</title>
 <meta name="theme-color" content="#7EC8FF">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
 <style>${css}</style>
 <div id="root" dir="rtl" lang="he"></div>
 <script type="module">${js}</script>
