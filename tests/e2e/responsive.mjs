@@ -62,7 +62,7 @@ for (const vp of VIEWPORTS) {
   await page.waitForSelector('canvas'); await page.waitForTimeout(2000);
   await check('world'); await shot('02-world');
 
-  if (await enter(Math.PI - 0.6, 'מכרות המספרים')) {
+  if (await enter(Math.PI - 0.75, 'מכרות המספרים')) {
     await check('math lobby'); await shot('03-math-lobby');
     await page.click('button:has-text("מסע היכרות")'); await page.waitForTimeout(600);
     await page.waitForSelector("text=למסע הראשון", { timeout: 3000 }).then((b) => b.click()).catch(() => {}); await page.waitForTimeout(600);
@@ -81,6 +81,12 @@ for (const vp of VIEWPORTS) {
     await page.click('.story-tonight'); await page.waitForTimeout(300);
     await check('story reader'); await shot('08-story-reader');
     await page.click('text=לכל הפרקים'); await home();
+  }
+  if (await enter(Math.PI, 'חכמים יותר')) {
+    await check('smarter lobby'); await shot('12-smarter');
+    await page.click('.domain-card >> nth=0'); await page.click('.word-card >> nth=0'); await page.waitForTimeout(300);
+    await check('smarter word'); await shot('13-smarter-word');
+    await page.click('text=לתחום'); await page.click('text=לכל התחומים'); await home();
   }
   if (await enter(1.05, 'גן החידות')) {
     await click('text=תפזורת מילים'); await click('.cat >> nth=1'); await page.waitForTimeout(300);

@@ -9,7 +9,7 @@ import { setObstacles } from './obstacles';
 
 /** Every landmark sits behind its entry pad, facing the island center (local +z points to the plaza). */
 const BODY_Z = -3.2;
-const BODY_R: Record<string, number> = { mines: 2.8, library: 2.2, lab: 2.4, village: 3.4, arena: 2.9, story: 2.6, puzzles: 2.6 };
+const BODY_R: Record<string, number> = { mines: 2.8, library: 2.2, lab: 2.4, village: 3.4, arena: 2.9, story: 2.6, puzzles: 2.6, smarter: 2.4 };
 
 const wood = { color: '#A46B3F', roughness: 0.85 } as const;
 const stone = { color: '#C9C3B8', roughness: 0.9 } as const;
@@ -172,6 +172,29 @@ function VillageBody() {
   );
 }
 
+/** A small academy: a house with a giant glowing light bulb on the roof and an open book at the door. */
+function SmarterBody({ def }: { def: PortalDef }) {
+  const bulb = useRef<Mesh>(null);
+  useFrame(({ clock }) => {
+    const m = bulb.current;
+    if (m) (m.material as MeshStandardMaterial).emissiveIntensity = 0.9 + Math.sin(clock.elapsedTime * 2) * 0.35;
+  });
+  return (
+    <group>
+      <House x={0} z={-0.4} rot={0} wall="#FFF6DD" roof={def.dark} s={1.35} />
+      <group position={[0, 3.35, -0.4]}>
+        <mesh ref={bulb} position={[0, 0.75, 0]} castShadow><sphereGeometry args={[0.62, 24, 18]} /><meshStandardMaterial color="#FFF3B0" emissive={def.color} emissiveIntensity={1} roughness={0.2} /></mesh>
+        <mesh position={[0, 0.02, 0]}><cylinderGeometry args={[0.3, 0.26, 0.4, 16]} /><meshStandardMaterial color="#9AA3B5" metalness={0.6} roughness={0.35} /></mesh>
+      </group>
+      {/* open book at the door */}
+      <group position={[0, 0.25, 1.9]} rotation={[-0.5, 0, 0]}>
+        {[-1, 1].map((sd) => <mesh key={sd} position={[sd * 0.36, 0, 0]} rotation={[0, 0, sd * 0.12]} castShadow><boxGeometry args={[0.7, 0.06, 0.9]} /><meshStandardMaterial color="#FFFFFF" roughness={0.8} /></mesh>)}
+        <mesh position={[0, -0.05, 0]}><boxGeometry args={[1.5, 0.05, 0.96]} /><meshStandardMaterial color={def.color} roughness={0.6} /></mesh>
+      </group>
+    </group>
+  );
+}
+
 /** A tower of toy letter blocks and a giant magnifying glass that slowly sways over it. */
 function PuzzlesBody({ def }: { def: PortalDef }) {
   const glass = useRef<Group>(null);
@@ -301,7 +324,7 @@ function Pad({ def }: { def: PortalDef }) {
   );
 }
 
-const SIGN_Y: Record<string, number> = { mines: 5.4, library: 5.9, lab: 5.0, village: 4.2, arena: 4.8, story: 5.6, puzzles: 5.4 };
+const SIGN_Y: Record<string, number> = { mines: 5.4, library: 5.9, lab: 5.0, village: 4.2, arena: 4.8, story: 5.6, puzzles: 5.4, smarter: 6.0 };
 
 function Landmark({ def }: { def: PortalDef }) {
   const pos = portalPos(def);
@@ -318,6 +341,7 @@ function Landmark({ def }: { def: PortalDef }) {
         {def.id === 'arena' && <ArenaBody def={def} />}
         {def.id === 'story' && <StoryBody def={def} />}
         {def.id === 'puzzles' && <PuzzlesBody def={def} />}
+        {def.id === 'smarter' && <SmarterBody def={def} />}
       </group>
       <Html position={[0, SIGN_Y[def.id], BODY_Z]} center distanceFactor={17} zIndexRange={[5, 0]} pointerEvents="none">
         <div className="sign" style={{ ['--sign' as string]: def.color }}><Icon className="icon" /> {def.name}</div>

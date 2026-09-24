@@ -6,12 +6,13 @@ The full plan (three phases, research, curriculum map) is in [docs/PLAN.md](docs
 
 ## What works in this version
 
-- **Third-person island** with 7 open portals, a Thinking Tree that grows with mastery, keyboard + a floating touch joystick (drift fixed and covered by an automated test).
+- **Third-person island** with 8 open portals, a Thinking Tree that grows with mastery, keyboard + a floating touch joystick (drift fixed and covered by an automated test).
 - **⛏️ Mines of Numbers** (math): 13 topics for grades ב-ג, a placement journey, and a mistake-pattern classifier. New in v0.4: math + reading - numbers in words, exercises written in words, and short word problems (one and two steps).
 - **📚 Library of Words** (language): 8 topics - gender and number agreement, singular/plural (including exceptions), punctuation, opposites, synonyms, word families, roots, and reading comprehension with short stories (explicit, sequence, inference).
 - **🔬 Nature Lab** (science): 8 topics - living/non-living, states of matter, materials, animals and habitats, teeth, plants, electricity and safety, mixtures. Common misconceptions get a dedicated explanation.
 - **♟️ Thinking Arena**: tic-tac-toe, connect four (the original's blocking bug fixed) and the Towers of Hanoi. Three levels the child picks (1 beginners, 2 advanced, 3 champions). The computer plays by fixed, visible rules, never randomly; level 3 plays perfect tic-tac-toe, searches 7 moves ahead in connect four, and hides the hints in Hanoi. After two wins the game suggests the next level. The game records when the child spots a threat or misses a winning move, which feeds the "spot a threat" and "think a step ahead" strategies.
 - **🤝 Friends Village** (values and friendship): 8 story scenarios plus **situation questions** - a bank of 756 situations across 12 skills, drawn at random in rounds of 8. The answer order is reshuffled every time, so the only way to the good answer is to understand the situation. Weaker choices show what happens and the child tries again; situations not understood come back after 3 days. The bank grows automatically (see below).
+- **💡 חכמים יותר**: 105 richer words in 13 domains. A word is learned through an illustration, a mini story and 3-5 easy questions, then moves through statuses over days: not learned, shown, practicing, known (after the child uses it in real life, with an optional note or voice recording). See `docs/SMARTER.md`.
 - **🧩 Puzzle garden**: word search by category (11 categories) and an exercise search where only correct exercises count. Three rule-based levels each.
 - **🌙 Bedtime story**: one chapter a night, opened by date, read aloud with the current paragraph highlighted, adjustable text size, a good-night question and a note for parents. Adding chapters: `docs/STORY.md`.
 - **The brain**: Elo per topic and per thinking strategy, mastery, spaced review, a daily journey in every world, and 3-level hints.

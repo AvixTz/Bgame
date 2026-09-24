@@ -29,6 +29,9 @@ Run `npm run typecheck && npm test` before every commit. Content changes: also
 - `src/minigames/arena/` - tic-tac-toe, connect four, Towers of Hanoi (`engines.ts` is pure and tested).
 - `src/minigames/village/` - SEL scenarios (no scoring by design) and the values quiz
   (`valuesBank.ts` loads every `src/content/values/*.json`, picks rounds, shuffles options).
+- `src/minigames/smarter/` - "חכמים יותר" words: `progress.ts` (status rules, tested), `wordBank.ts`
+  (loads `src/content/smarter/*.json`), `Smarter.tsx`. Docs: docs/SMARTER.md.
+- `src/minigames/puzzles/` - word search and exercise search (`wordSearch.ts`, `mathSearch.ts` are pure and tested).
 - `src/minigames/story/` - bedtime story reader; content in `src/content/story/` (docs/STORY.md).
 - `scripts/values/`, `scripts/story/` - content validators (run in CI) and Claude API generators.
 - `src/world/` - the 3D island, avatar, portals, input (`controls.ts`).

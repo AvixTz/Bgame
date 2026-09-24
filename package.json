@@ -1,7 +1,7 @@
 {
   "name": "bgame",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "description": "Bgame - עולם למידה וחשיבה לכיתות א-ה",
   "scripts": {
@@ -12,10 +12,11 @@
     "test": "vitest run",
     "playtest": "node tests/e2e/playtest.mjs",
     "responsive": "node tests/e2e/responsive.mjs",
-    "content:check": "node scripts/values/validate.mjs && node scripts/story/validate.mjs",
+    "content:check": "node scripts/values/validate.mjs && node scripts/story/validate.mjs && node scripts/smarter/validate.mjs",
     "values:generate": "node scripts/values/generate.mjs",
     "story:extract": "node scripts/story/extract-issue.mjs",
-    "story:import": "node scripts/story/import.mjs"
+    "story:import": "node scripts/story/import.mjs",
+    "smarter:generate": "node scripts/smarter/generate.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

@@ -51,7 +51,7 @@ p2 = await pos(); await frames(20); p3 = await pos();
 results.driftAfterReleaseOutside = dist(p2, p3).toFixed(3);
 
 // drag while walking into a portal zone, then release (old bug: joystick unmounted mid-drag)
-await page.evaluate(() => { const a = Math.PI - 0.6; window.__teleport = [Math.sin(a) * 11.2, Math.cos(a) * 11.2]; });
+await page.evaluate(() => { const a = Math.PI - 0.75; window.__teleport = [Math.sin(a) * 11.2, Math.cos(a) * 11.2]; });
 await frames(6);
 await page.mouse.move(cx, cy); await page.mouse.down();
 await page.mouse.move(cx, cy - 40, { steps: 4 });
@@ -93,7 +93,7 @@ const answerChoices = async (n, prefix) => {
 };
 
 // library
-if (await enter(Math.PI + 0.6, 'ספריית המילים')) {
+if (await enter(Math.PI + 0.75, 'ספריית המילים')) {
   await shot('03-library-lobby');
   await page.click('button:has-text("למסע של היום")');
   await answerChoices(8, '04-library');
@@ -216,6 +216,24 @@ if (await enter(1.05, 'גן החידות')) {
   await shot('13k-mathsearch-done');
   await page.click('text=לגן החידות'); await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
 }
+// smarter words: learn a word, answer its questions, status becomes "הוצג"
+if (await enter(Math.PI, 'חכמים יותר')) {
+  await shot('13l-smarter');
+  await page.click('.domain-card >> nth=0'); await page.waitForTimeout(200);
+  await page.click('.word-card >> nth=0'); await page.waitForTimeout(200);
+  await page.screenshot({ path: `${OUT}/13m-smarter-word.png`, fullPage: true });
+  await page.click('button:has-text("לשאלות")'); await page.waitForTimeout(200);
+  for (let k = 0; k < 30; k++) {
+    if (await page.$('.next-step')) break;
+    const next = await page.$('.word-quiz button:has-text("המשך"), .word-quiz button:has-text("סיימתי")');
+    if (next) { await next.click(); await page.waitForTimeout(150); continue; }
+    const ch = await page.$$('.word-quiz .choice:not([disabled])');
+    if (ch.length) { await ch[0].click(); await page.waitForTimeout(120); if (k === 0) await shot('13n-smarter-quiz'); }
+  }
+  results.smarterStatus = await page.$eval('.word-head .wstatus', (e) => e.textContent).catch(() => null);
+  await shot('13o-smarter-done');
+  await page.click('text=לתחום'); await page.click('text=לכל התחומים'); await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
+}
 // bedtime story
 if (await enter(-0.62, 'סיפור לילה')) {
   await shot('13d-story-lobby');
@@ -244,7 +262,7 @@ console.log('RESULTS', JSON.stringify(results));
 console.log('ERRORS:', errors.length ? errors.join('\n') : 'none');
 await browser.close();
 const drifts = ['driftAfterRelease', 'driftAfterReleaseOutside', 'driftAfterPortalDrag', 'driftAfterKeyUp'].map((k) => Number(results[k]));
-if (errors.length || drifts.some((d) => d > 0.1) || Number(results.joystickMoves) < 0.5 || !results.valuesRoundDone || !results.storyAnswered || !results.wordSearchSolved || !results.mathSearchSolved) {
+if (errors.length || drifts.some((d) => d > 0.1) || Number(results.joystickMoves) < 0.5 || !results.valuesRoundDone || !results.storyAnswered || !results.wordSearchSolved || !results.mathSearchSolved || results.smarterStatus !== 'הוצג') {
   console.error('PLAYTEST FAILED', { drifts, errors });
   process.exit(1);
 }

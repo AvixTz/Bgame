@@ -1,0 +1,15 @@
+[
+  { "id": "economy", "name": "כלכלה וכסף", "icon": "coins" },
+  { "id": "thinking", "name": "חשיבה ולמידה", "icon": "brain" },
+  { "id": "critical", "name": "חשיבה ביקורתית", "icon": "search" },
+  { "id": "problems", "name": "פתרון בעיות", "icon": "wrench" },
+  { "id": "planning", "name": "תכנון וארגון", "icon": "calendar" },
+  { "id": "leadership", "name": "ניהול ומנהיגות", "icon": "flag" },
+  { "id": "communication", "name": "תקשורת", "icon": "message" },
+  { "id": "social", "name": "יחסים חברתיים", "icon": "users" },
+  { "id": "growth", "name": "התפתחות אישית", "icon": "sprout" },
+  { "id": "emotions", "name": "רגשות מורכבים", "icon": "smile" },
+  { "id": "values", "name": "ערכים", "icon": "heart" },
+  { "id": "science", "name": "מדע וטכנולוגיה", "icon": "flask" },
+  { "id": "worlds", "name": "אמנות, ספורט ועוד", "icon": "palette" }
+]

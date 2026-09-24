@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { BookOpen, FlaskConical, Handshake, Moon, Pickaxe, Puzzle, Swords, type LucideIcon } from 'lucide-react';
+import { BookOpen, FlaskConical, GraduationCap, Handshake, Moon, Pickaxe, Puzzle, Swords, type LucideIcon } from 'lucide-react';
 import type { WorldId } from '../core/store';
 
 export interface PortalDef {
@@ -16,8 +16,9 @@ export interface PortalDef {
 }
 
 export const PORTALS: PortalDef[] = [
-  { id: 'mines', name: 'מכרות המספרים', emoji: '⛏️', icon: Pickaxe, color: '#F29A2E', dark: '#9A5A12', angle: Math.PI - 0.6, open: true },
-  { id: 'library', name: 'ספריית המילים', emoji: '📚', icon: BookOpen, color: '#8A5CF6', dark: '#5B34B8', angle: Math.PI + 0.6, open: true },
+  { id: 'mines', name: 'מכרות המספרים', emoji: '⛏️', icon: Pickaxe, color: '#F29A2E', dark: '#9A5A12', angle: Math.PI - 0.75, open: true },
+  { id: 'smarter', name: 'חכמים יותר', emoji: '💡', icon: GraduationCap, color: '#F0A500', dark: '#A36A00', angle: Math.PI, open: true },
+  { id: 'library', name: 'ספריית המילים', emoji: '📚', icon: BookOpen, color: '#8A5CF6', dark: '#5B34B8', angle: Math.PI + 0.75, open: true },
   { id: 'lab', name: 'מעבדת הטבע', emoji: '🔬', icon: FlaskConical, color: '#14B3A8', dark: '#0B6F69', angle: 1.75, open: true },
   { id: 'village', name: 'כפר החברים', emoji: '🤝', icon: Handshake, color: '#3FB35F', dark: '#23703A', angle: -1.75, open: true },
   { id: 'arena', name: 'ארנה החשיבה', emoji: '♟️', icon: Swords, color: '#3E6BF0', dark: '#1F3FA8', angle: 0.3, open: true },

@@ -7,6 +7,10 @@ import { NODE_BY_ID } from '../brain/curriculum';
 import { SCENARIOS, SKILLS } from '../minigames/village/scenarios';
 import { VALUE_SKILLS, skillSummary } from '../minigames/village/valuesBank';
 import { CHAPTERS, chapterKey } from '../minigames/story/storyBank';
+import { WORD_BY_ID } from '../minigames/smarter/wordBank';
+import { STATUS_LABEL, wordStatus, type WordStatus } from '../minigames/smarter/progress';
+import { dayKey } from '../economy/economy';
+import { deleteRecording, getRecording } from '../data/db';
 
 const SUBJECTS = [
   { id: 'math', name: 'חשבון · מכרות המספרים', icon: '⛏️' },
@@ -171,6 +175,7 @@ export function Parent() {
             <StorySection read={player.storyRead} />
           </div>
           <PuzzlesSection puzzles={player.puzzles} />
+          <SmarterSection />
 
           <p className="privacy">🔒 כל הנתונים נשמרים רק במכשיר הזה. זו גרסה ניסיונית. הנושאים מבוססים על תוכניות הלימודים של משרד החינוך (חשבון, חינוך לשוני, מדע וטכנולוגיה, כישורי חיים) ועדיין לא עברו אישור של מורה.</p>
         </>
@@ -229,5 +234,56 @@ function PuzzlesSection({ puzzles }: { puzzles?: import('../data/db').PlayerDoc[
       </ul>
       <p className="muted small">בתפזורת התרגילים יש בכוונה תרגילים שגויים. סימון של תרגיל שגוי הוא הזדמנות לבדוק חישוב, והמשחק מראה מה התוצאה הנכונה.</p>
     </div>
+  );
+}
+
+function SmarterSection() {
+  const { player, updatePlayer } = useApp();
+  const prog = player!.smarter ?? {};
+  const today = dayKey(Date.now());
+  const entries = Object.entries(prog).filter(([id]) => WORD_BY_ID.has(id));
+  if (!entries.length) return null;
+  const counts: Record<WordStatus, number> = { new: 0, shown: 0, practice: 0, known: 0 };
+  for (const [, p] of entries) counts[wordStatus(p, today)]++;
+  const known = entries.filter(([, p]) => p.usedDay);
+  const removeRecording = async (wordId: string, rid: number) => {
+    await deleteRecording(rid);
+    updatePlayer((pl) => ({ ...pl, smarter: { ...(pl.smarter ?? {}), [wordId]: { ...pl.smarter![wordId], recordingId: undefined } } }));
+  };
+  return (
+    <div className="card">
+      <h3>חכמים יותר</h3>
+      <p>{(['shown', 'practice', 'known'] as WordStatus[]).map((s) => `${STATUS_LABEL[s]}: ${counts[s]}`).join(' · ')}</p>
+      {known.length > 0 && (
+        <table className="nodes">
+          <thead><tr><th>מילה</th><th>איפה השתמש/ה</th><th>הקלטה</th></tr></thead>
+          <tbody>
+            {known.map(([id, p]) => (
+              <tr key={id}>
+                <td><b>{WORD_BY_ID.get(id)!.word}</b></td>
+                <td>{p.note ?? <span className="muted">-</span>}</td>
+                <td>{p.recordingId ? <RecordingCell id={p.recordingId} onDelete={() => removeRecording(id, p.recordingId!)} /> : <span className="muted">-</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <p className="muted small">מילה עוברת ל"בתרגול" אחרי שהילד ענה נכון על השאלות ביומיים שונים, ול"מכירים" רק כשסימן שהשתמש בה בחיים (מהיום השלישי). ההקלטות נשמרות רק במכשיר הזה ואפשר למחוק אותן כאן.</p>
+    </div>
+  );
+}
+
+function RecordingCell({ id, onDelete }: { id: number; onDelete: () => void }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let u: string | null = null;
+    getRecording(id).then((r) => { if (r) { u = URL.createObjectURL(r.blob); setUrl(u); } });
+    return () => { if (u) URL.revokeObjectURL(u); };
+  }, [id]);
+  return (
+    <span className="row" style={{ justifyContent: 'flex-start' }}>
+      {url && <audio controls src={url} style={{ maxWidth: 220 }} />}
+      <button className="btn btn-ghost btn-sm" onClick={onDelete}>מחיקה</button>
+    </span>
   );
 }

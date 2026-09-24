@@ -11,6 +11,7 @@ import { Arena } from './minigames/arena/Arena';
 import { Village } from './minigames/village/Village';
 import { Story } from './minigames/story/Story';
 import { Puzzles } from './minigames/puzzles/Puzzles';
+import { Smarter } from './minigames/smarter/Smarter';
 import { PORTALS } from './world/portals';
 import { bindKeyboard, resetInput } from './world/controls';
 import { sfx } from './core/audio';
@@ -66,6 +67,7 @@ export function App() {
       {screen === 'village' && <Village onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
       {screen === 'story' && <Story onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
       {screen === 'puzzles' && <Puzzles onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
+      {screen === 'smarter' && <Smarter onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
       {screen === 'parent' && <Parent />}
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
       {wipe && <div className="wipe" style={{ ['--wipe' as string]: wipe }} aria-hidden />}

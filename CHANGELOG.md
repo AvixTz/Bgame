@@ -2,6 +2,16 @@
 
 Versions follow `MAJOR.MINOR.PATCH`. Each release is a git tag (`v0.2.0`) with a GitHub release.
 
+## v0.6.0 - 2026-09-24 - "חכמים יותר"
+- New house at the front of the island (a school with a glowing light bulb): 105 richer words in 13
+  domains, built from the "100 words" sheet (duplicates merged, a few meanings and examples fixed).
+- Each word: meaning, emoji illustration, short explanation, a mini story that shows the meaning with
+  the word highlighted (read aloud), related words, and 3-5 easy questions with shuffled options.
+- Status per word: טרם נלמד → הוצג (first two days) → בתרגול (questions passed on two different days)
+  → מכירים (from day 3, after the child marks real-life use, with an optional note or voice recording
+  kept only on the device). "Waiting for you today" list; parents see statuses, notes and recordings.
+- `npm run smarter:generate -- words.csv`: new sheet rows become full word content via the Claude API.
+
 ## v0.5.0 - 2026-09-24 - puzzle garden
 - New portal "גן החידות" with a toy-block tower landmark.
 - Word search by category (11 categories: animals, countries, jobs, names, holidays, fruit and

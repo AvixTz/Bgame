@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { Attempt, Grade, SkillState, StrategyId, StrategyState } from '../brain/types';
 import type { Gender } from '../core/rng';
+import type { WordProgress } from '../minigames/smarter/progress';
 
 export interface PlayerDoc {
   id: string;
@@ -29,6 +30,8 @@ export interface PlayerDoc {
   storyRead?: Record<string, string>;
   /** Word search and exercise search. */
   puzzles?: Partial<Record<'words' | 'math', PuzzleStat>>;
+  /** "חכמים יותר": progress per word id. */
+  smarter?: Record<string, WordProgress>;
 }
 
 export interface PuzzleStat { level: number; solved: number; wonLevels: number[]; hints: number; mistakes: number; categories?: Record<string, number> }
@@ -40,12 +43,14 @@ export interface ArenaStat { level: number; wins: number; losses: number; draws:
 class BgameDB extends Dexie {
   players!: Table<PlayerDoc, string>;
   attempts!: Table<Attempt & { id?: number }, number>;
+  recordings!: Table<Recording, number>;
   constructor() {
     super('bgame');
     this.version(1).stores({
       players: 'id, createdAt',
       attempts: '++id, playerId, at, nodeId',
     });
+    this.version(2).stores({ recordings: '++id, playerId, wordId' });
   }
 }
 
@@ -56,6 +61,8 @@ class BgameDB extends Dexie {
 let db: BgameDB | null = null;
 const memPlayers = new Map<string, PlayerDoc>();
 const memAttempts: Attempt[] = [];
+const memRecordings = new Map<number, Recording>();
+let memRecordingId = 1;
 let persistent = false;
 
 export async function initDb(): Promise<boolean> {
@@ -92,6 +99,7 @@ export async function deletePlayer(id: string): Promise<void> {
     try {
       await db.players.delete(id);
       await db.attempts.where('playerId').equals(id).delete();
+      await db.recordings.where('playerId').equals(id).delete();
     } catch { /* ignore */ }
   }
 }
@@ -108,6 +116,33 @@ export async function attemptsFor(playerId: string): Promise<Attempt[]> {
     try { return await db.attempts.where('playerId').equals(playerId).sortBy('at'); } catch { /* fall through */ }
   }
   return memAttempts.filter((a) => a.playerId === playerId);
+}
+
+/**
+ * Voice notes ("where I used the word"). Kept only on this device, never uploaded; deleted with the
+ * player or from the parents' area.
+ */
+export interface Recording { id?: number; playerId: string; wordId: string; blob: Blob; mime: string; at: number }
+
+export async function saveRecording(r: Omit<Recording, 'id'>): Promise<number> {
+  if (db) {
+    try { return await db.recordings.add({ ...r }); } catch { /* fall back to memory */ }
+  }
+  const id = memRecordingId++;
+  memRecordings.set(id, { ...r, id });
+  return id;
+}
+
+export async function getRecording(id: number): Promise<Recording | undefined> {
+  if (db) {
+    try { const r = await db.recordings.get(id); if (r) return r; } catch { /* fall through */ }
+  }
+  return memRecordings.get(id);
+}
+
+export async function deleteRecording(id: number): Promise<void> {
+  memRecordings.delete(id);
+  if (db) { try { await db.recordings.delete(id); } catch { /* ignore */ } }
 }
 
 export function newPlayer(nickname: string, gender: Gender, grade: Grade, color: string): PlayerDoc {
