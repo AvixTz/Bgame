@@ -11,6 +11,7 @@ const FREE_COLORS = SHOP.filter((s) => s.kind === 'color' && s.price === 0);
 export function Profiles() {
   const [players, setPlayers] = useState<PlayerDoc[] | null>(null);
   const [creating, setCreating] = useState(false);
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender>('m');
   const [grade, setGrade] = useState<Grade>(2);
@@ -47,13 +48,15 @@ export function Profiles() {
                   <b>{p.nickname}</b>
                   <small>כיתה {p.grade === 2 ? "ב'" : "ג'"} · 🪙 {p.coins}</small>
                 </button>
-                <button className="icon-btn" aria-label={`מחיקת ${p.nickname}`}
-                  onClick={async () => {
-                    if (confirm(`למחוק את ${p.nickname} וכל ההתקדמות ${p.gender === 'f' ? 'שלה' : 'שלו'}?`)) {
-                      await deletePlayer(p.id);
-                      setPlayers(await listPlayers());
-                    }
-                  }}>🗑️</button>
+                {confirmDel === p.id ? (
+                  <div className="confirm-del">
+                    <span>למחוק את {p.nickname}?</span>
+                    <button className="btn btn-pink btn-sm" onClick={async () => { await deletePlayer(p.id); setConfirmDel(null); setPlayers(await listPlayers()); }}>מחיקה</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDel(null)}>ביטול</button>
+                  </div>
+                ) : (
+                  <button className="icon-btn" aria-label={`מחיקת ${p.nickname}`} onClick={() => setConfirmDel(p.id)}>🗑️</button>
+                )}
               </div>
             ))}
           </div>
