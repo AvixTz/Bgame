@@ -1,4 +1,3 @@
-import type { Rng } from '../../core/rng';
 
 // ---------------- Tic-tac-toe ----------------
 // Cells 0..8, values: 0 empty, 1 child, 2 computer.
@@ -41,36 +40,45 @@ function minimax(b: TttBoard, turn: number, depth: number): number {
   return best;
 }
 
-/** Level 1: mostly random. Level 2: wins and blocks. Level 3: perfect play. */
-export function tttAiMove(b: TttBoard, level: number, rng: Rng): number {
-  const free = empties(b);
+/** Preference order when rules tie: center, corners, edges. */
+const TTT_PREF = [4, 0, 2, 6, 8, 1, 3, 5, 7];
+const OPPOSITE: Record<number, number> = { 0: 8, 2: 6, 6: 2, 8: 0 };
+
+export const TTT_RULES: Record<number, string[]> = {
+  1: ['אם אפשר לנצח - מנצח', 'אחרת: מרכז, אחר כך פינות, אחר כך צלעות'],
+  2: ['אם אפשר לנצח - מנצח', 'אם צריך - חוסם', 'תופס מרכז, ואז פינה מול הפינה שלך'],
+  3: ['לא טועה אף פעם: בודק כל המשך אפשרי עד סוף המשחק', 'מנצח, חוסם, ובונה מלכודות של שני איומים'],
+};
+
+/**
+ * Rule-based computer player - no randomness, the same board always gets the same move, so a child
+ * can learn how the computer thinks and beat it.
+ * 1: win, else take the best free square by preference (does not block).
+ * 2: win, block, center, the corner opposite the child's corner, then preference.
+ * 3: perfect play (full minimax with depth), ties broken by the preference order.
+ */
+export function tttAiMove(b: TttBoard, level: number): number {
+  const free = TTT_PREF.filter((i) => b[i] === 0);
   const win = tttWinningMove(b, 2);
-  const block = tttWinningMove(b, 1);
-  if (level === 1) {
-    if (win >= 0 && rng() < 0.5) return win;
-    return free[Math.floor(rng() * free.length)];
-  }
   if (win >= 0) return win;
+  if (level === 1) return free[0];
+  const block = tttWinningMove(b, 1);
   if (block >= 0) return block;
   if (level === 2) {
-    if (b[4] === 0 && rng() < 0.5) return 4;
-    return free[Math.floor(rng() * free.length)];
+    if (b[4] === 0) return 4;
+    for (const c of [0, 2, 6, 8]) if (b[c] === 1 && b[OPPOSITE[c]] === 0) return OPPOSITE[c];
+    return free[0];
   }
-  // Opening: any corner or the center is optimal; skip the full search.
-  if (free.length >= 8) {
-    const openings = [0, 2, 4, 6, 8].filter((i) => b[i] === 0);
-    if (free.length === 9 || b[4] !== 0) return openings[Math.floor(rng() * openings.length)];
-    return 4;
-  }
+  if (free.length === 9) return 4;
   let best = -Infinity;
-  let moves: number[] = [];
+  let move = free[0];
   for (const i of free) {
     b[i] = 2;
     const v = minimax(b, 1, 1);
     b[i] = 0;
-    if (v > best) { best = v; moves = [i]; } else if (v === best) moves.push(i);
+    if (v > best) { best = v; move = i; }
   }
-  return moves[Math.floor(rng() * moves.length)];
+  return move;
 }
 
 // ---------------- Connect four ----------------
@@ -168,32 +176,59 @@ function negamax(b: C4Board, depth: number, alpha: number, beta: number, who: nu
   return best;
 }
 
-export function c4AiMove(b: C4Board, level: number, rng: Rng): number {
-  const valid = c4Valid(b);
+const C4_ORDER = [3, 2, 4, 1, 5, 0, 6];
+
+export const C4_RULES: Record<number, string[]> = {
+  1: ['אם אפשר לנצח - מנצח', 'אם צריך - חוסם', 'אחרת: הכי קרוב לאמצע'],
+  2: ['מנצח וחוסם', 'לא משחק מתחת למקום שבו אפשר לנצח אותו', 'בוחר את המהלך שבונה הכי הרבה שורות'],
+  3: ['חושב 7 מהלכים קדימה', 'מנצח, חוסם, לא נופל במלכודות ובונה איומים כפולים'],
+};
+
+/** Columns where the computer's disc would let the child win right above it. */
+function poisoned(b: C4Board, col: number): boolean {
+  if (c4Drop(b, col, 2) < 0) return true;
+  const gives = c4WinningCol(b, 1) === col;
+  c4Undo(b, col);
+  return gives;
+}
+
+/**
+ * Rule-based computer player - deterministic: ties are broken by closeness to the center column.
+ * 1: win, block, center-most column.
+ * 2: win, block, avoid poisoned columns, then the best one-move evaluation.
+ * 3: win, block, then alpha-beta search 7 plies deep over safe columns.
+ */
+export function c4AiMove(b: C4Board, level: number): number {
+  const valid = C4_ORDER.filter((c) => b[0][c] === 0);
   const win = c4WinningCol(b, 2);
-  const block = c4WinningCol(b, 1);
-  if (level === 1) {
-    if (win >= 0 && rng() < 0.6) return win;
-    if (block >= 0 && rng() < 0.3) return block;
-    return valid[Math.floor(rng() * valid.length)];
-  }
   if (win >= 0) return win;
+  const block = c4WinningCol(b, 1);
   if (block >= 0) return block;
-  const depth = level === 2 ? 2 : 5;
+  if (level === 1) return valid[0];
+  const safe = valid.filter((c) => !poisoned(b, c));
+  const pool = safe.length ? safe : valid;
+  const depth = level === 2 ? 1 : 7;
   let best = -Infinity;
-  let moves: number[] = [];
-  for (const c of valid) {
+  let move = pool[0];
+  for (const c of pool) {
     c4Drop(b, c, 2);
-    const v = -negamax(b, depth - 1, -Infinity, Infinity, 1);
+    const v = depth === 1 ? evaluate(b) : -negamax(b, depth - 1, -Infinity, Infinity, 1);
     c4Undo(b, c);
-    if (v > best) { best = v; moves = [c]; } else if (v === best) moves.push(c);
+    if (v > best) { best = v; move = c; }
   }
-  return moves[Math.floor(rng() * moves.length)];
+  return move;
 }
 
 // ---------------- Towers of Hanoi ----------------
 
 export type Pegs = [number[], number[], number[]];
+export const HANOI_RULES: Record<number, string[]> = {
+  1: ['3 דיסקים', 'רמזים פתוחים'],
+  2: ['4 דיסקים', 'רמזים פתוחים'],
+  3: ['5 דיסקים, בלי רמזים', 'ניצחון רק במספר המהלכים הכי קטן: 31'],
+};
+export const hanoiDisks = (level: number) => level + 2;
+
 export const hanoiStart = (n: number): Pegs => [Array.from({ length: n }, (_, i) => n - i), [], []];
 export const hanoiOptimal = (n: number) => 2 ** n - 1;
 export function hanoiCanMove(p: Pegs, from: number, to: number): boolean {

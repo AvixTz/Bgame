@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Handshake, Sparkles, Volume2 } from 'lucide-react';
+import { Handshake, MessagesSquare, Sparkles, Volume2 } from 'lucide-react';
 import { burst } from '../../ui/fx';
 import { useApp } from '../../core/store';
 import { g } from '../../core/rng';
 import { sfx, speak } from '../../core/audio';
 import { SCENARIOS, SKILLS, type Scenario } from './scenarios';
+import { ValuesQuiz } from './ValuesQuiz';
+import { VALUE_BANK, VALUE_SKILLS } from './valuesBank';
 
 /** The Friends Village: social situations with choices and consequences. No score, no coins. */
 export function Village({ onExit }: { onExit: () => void }) {
@@ -14,6 +16,7 @@ export function Village({ onExit }: { onExit: () => void }) {
   const [sc, setSc] = useState<Scenario | null>(null);
   const [picked, setPicked] = useState<number[]>([]);
   const [done, setDone] = useState(false);
+  const [quiz, setQuiz] = useState<{ skill?: string } | null>(null);
 
   const visited = p.village ?? {};
   const skillsFound = new Set(
@@ -30,6 +33,19 @@ export function Village({ onExit }: { onExit: () => void }) {
     setPicked(next);
     updatePlayer((pl) => ({ ...pl, village: { ...(pl.village ?? {}), [sc.id]: [...new Set([...(pl.village?.[sc.id] ?? []), String(i)])] } }));
   };
+
+  if (quiz) {
+    return (
+      <div className="screen mines world-village">
+        <div className="mine-top">
+          <button className="btn btn-ghost btn-sm" onClick={() => setQuiz(null)}>לכפר</button>
+          <h2 className="mine-title"><MessagesSquare className="icon" /> שאלות מצב</h2>
+          <span />
+        </div>
+        <ValuesQuiz skill={quiz.skill} onExit={() => setQuiz(null)} />
+      </div>
+    );
+  }
 
   if (sc) {
     const last = picked[picked.length - 1];
@@ -93,6 +109,17 @@ export function Village({ onExit }: { onExit: () => void }) {
           ))}
         </div>
       </div>
+      <div className="card values-hero">
+        <h3><MessagesSquare className="icon" /> שאלות מצב</h3>
+        <p>{G('סבב של 8 מצבים מהחיים. קרא{|י} כל מצב עד הסוף ובחר{|י} מה הכי כדאי לעשות.')} <span className="muted">({VALUE_BANK.length} מצבים במאגר)</span></p>
+        <button className="btn btn-pink" onClick={() => { sfx.tap(); setQuiz({}); }}>{G('התחל{|י} סבב')}</button>
+        <div className="strats values-skills">
+          {Object.entries(VALUE_SKILLS).map(([id, name]) => (
+            <button key={id} className="strat" onClick={() => { sfx.tap(); setQuiz({ skill: id }); }}>{name}</button>
+          ))}
+        </div>
+      </div>
+      <h3 className="section-title">סיפורי הכפר</h3>
       <div className="tunnels">
         {SCENARIOS.map((s) => (
           <button key={s.id} className={`tunnel ${visited[s.id] ? 'st-mastered' : 'st-new'}`} onClick={() => { sfx.tap(); setSc(s); }}>

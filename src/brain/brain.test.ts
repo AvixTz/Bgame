@@ -88,6 +88,30 @@ describe('generators', () => {
   });
 });
 
+describe('math + reading', () => {
+  it('word exercises and stories keep numbers in words and have correct answers', () => {
+    const rng = makeRng(99);
+    for (let i = 0; i < 400; i++) {
+      for (const tier of [1, 2, 3] as const) {
+        const w = generateItem('mr_wordcalc', tier, rng);
+        const line = w.prompt.split('\n')[1];
+        expect(line).not.toMatch(/\d/);
+        const nums = w.explain.match(/= (\d+) ([+−]) (\d+) = (\d+)/)!;
+        const [a, op, b, ans] = [Number(nums[1]), nums[2], Number(nums[3]), Number(nums[4])];
+        expect(op === '+' ? a + b : a - b).toBe(ans);
+        expect(w.answer).toBe(ans);
+        expect(ans).toBeGreaterThanOrEqual(0);
+        if (tier === 2) expect(op === '+' ? (a % 10) + (b % 10) < 10 : (a % 10) >= (b % 10)).toBe(true);
+        if (tier === 3) expect(op === '+' ? (a % 10) + (b % 10) >= 10 : (a % 10) < (b % 10)).toBe(true);
+        const st = generateItem('mr_story', tier, rng);
+        expect(st.passage).toBeTruthy();
+        expect(st.answer).toBeGreaterThanOrEqual(0);
+        expect(evalExpr(st.explain.split(' = ')[0])).toBe(st.answer);
+      }
+    }
+  });
+});
+
 describe('mistake classifier', () => {
   const item = (nodeId: string, expr: string, answer: number) =>
     ({ ...generateItem(nodeId, 2, makeRng(1)), expr, answer });

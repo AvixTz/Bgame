@@ -75,8 +75,9 @@ export const MATH_NODES: CurriculumNode[] = [
 
 import { LANGUAGE_NODES } from './content/language';
 import { SCIENCE_NODES } from './content/science';
+import { MATH_READING_NODES } from './content/mathReading';
 
-export const NODES: CurriculumNode[] = [...MATH_NODES, ...LANGUAGE_NODES, ...SCIENCE_NODES];
+export const NODES: CurriculumNode[] = [...MATH_NODES, ...MATH_READING_NODES, ...LANGUAGE_NODES, ...SCIENCE_NODES];
 
 export const NODE_BY_ID: Record<string, CurriculumNode> = Object.fromEntries(NODES.map((n) => [n.id, n]));
 

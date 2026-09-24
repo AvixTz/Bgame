@@ -9,7 +9,7 @@ import { setObstacles } from './obstacles';
 
 /** Every landmark sits behind its entry pad, facing the island center (local +z points to the plaza). */
 const BODY_Z = -3.2;
-const BODY_R: Record<string, number> = { mines: 2.8, library: 2.2, lab: 2.4, village: 3.4, arena: 2.9 };
+const BODY_R: Record<string, number> = { mines: 2.8, library: 2.2, lab: 2.4, village: 3.4, arena: 2.9, story: 2.6 };
 
 const wood = { color: '#A46B3F', roughness: 0.85 } as const;
 const stone = { color: '#C9C3B8', roughness: 0.9 } as const;
@@ -172,6 +172,38 @@ function VillageBody() {
   );
 }
 
+/** A cozy night tent under a glowing crescent moon, with a few stars bobbing above it. */
+function StoryBody({ def }: { def: PortalDef }) {
+  const stars = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    const g = stars.current;
+    if (!g) return;
+    g.children.forEach((c, i) => { c.position.y = 3.6 + i * 0.35 + Math.sin(clock.elapsedTime * 1.2 + i * 1.7) * 0.18; c.rotation.y += 0.01; });
+  });
+  return (
+    <group>
+      {/* tent */}
+      <mesh position={[0, 1.3, -0.3]} castShadow receiveShadow><coneGeometry args={[2.1, 2.6, 8]} /><meshStandardMaterial color={def.dark} roughness={0.8} flatShading /></mesh>
+      <mesh position={[0, 0.25, -0.3]} castShadow><cylinderGeometry args={[2.1, 2.1, 0.5, 8]} /><meshStandardMaterial color={def.color} roughness={0.8} flatShading /></mesh>
+      {/* warm doorway */}
+      <mesh position={[0, 0.75, 1.55]} rotation={[-0.28, 0, 0]}><circleGeometry args={[0.62, 20, 0, Math.PI]} /><meshStandardMaterial color="#FFD27A" emissive="#FFB84D" emissiveIntensity={1.1} /></mesh>
+      <mesh position={[0, 0.45, 1.62]}><planeGeometry args={[1.24, 0.6]} /><meshStandardMaterial color="#FFD27A" emissive="#FFB84D" emissiveIntensity={1.1} /></mesh>
+      {/* pole with crescent moon */}
+      <mesh position={[1.9, 1.7, 0.9]}><cylinderGeometry args={[0.05, 0.05, 3.4, 8]} /><meshStandardMaterial {...wood} /></mesh>
+      <mesh position={[1.9, 3.75, 0.9]} rotation={[0, 0, 0.9]}>
+        <torusGeometry args={[0.55, 0.16, 12, 32, Math.PI * 1.25]} /><meshStandardMaterial color="#FFE38A" emissive="#FFD34D" emissiveIntensity={1.3} roughness={0.4} />
+      </mesh>
+      <group ref={stars}>
+        {[[-1.4, 0.2], [0.3, -0.6], [-0.4, 0.9]].map(([x, z], i) => (
+          <mesh key={i} position={[x, 3.6, z]} scale={0.22}><octahedronGeometry args={[1, 0]} /><meshStandardMaterial color="#FFF6C8" emissive="#FFE680" emissiveIntensity={1.4} /></mesh>
+        ))}
+      </group>
+      {/* pillows by the door */}
+      {[-1.2, 1.2].map((x) => <mesh key={x} position={[x, 0.2, 1.9]} scale={[0.5, 0.25, 0.4]} castShadow><sphereGeometry args={[1, 14, 10]} /><meshStandardMaterial color={x < 0 ? '#FF9EC1' : '#9EC5FF'} roughness={0.9} /></mesh>)}
+    </group>
+  );
+}
+
 function pawnGeometry() {
   const pts = [[0, 0], [0.95, 0], [0.95, 0.2], [0.7, 0.35], [0.5, 0.5], [0.38, 1.3], [0.6, 1.45], [0.35, 1.6], [0.5, 1.95], [0.3, 2.3], [0, 2.35]];
   return new LatheGeometry(pts.map(([x, y]) => new Vector2(x, y)), 32);
@@ -243,7 +275,7 @@ function Pad({ def }: { def: PortalDef }) {
   );
 }
 
-const SIGN_Y: Record<string, number> = { mines: 5.4, library: 5.9, lab: 5.0, village: 4.2, arena: 4.8 };
+const SIGN_Y: Record<string, number> = { mines: 5.4, library: 5.9, lab: 5.0, village: 4.2, arena: 4.8, story: 5.6 };
 
 function Landmark({ def }: { def: PortalDef }) {
   const pos = portalPos(def);
@@ -258,6 +290,7 @@ function Landmark({ def }: { def: PortalDef }) {
         {def.id === 'lab' && <LabBody def={def} />}
         {def.id === 'village' && <VillageBody />}
         {def.id === 'arena' && <ArenaBody def={def} />}
+        {def.id === 'story' && <StoryBody def={def} />}
       </group>
       <Html position={[0, SIGN_Y[def.id], BODY_Z]} center distanceFactor={17} zIndexRange={[5, 0]} pointerEvents="none">
         <div className="sign" style={{ ['--sign' as string]: def.color }}><Icon className="icon" /> {def.name}</div>

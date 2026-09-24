@@ -1,7 +1,7 @@
 {
   "name": "bgame",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "Bgame - עולם למידה וחשיבה לכיתות א-ה",
   "scripts": {
@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "playtest": "node tests/e2e/playtest.mjs"
+    "playtest": "node tests/e2e/playtest.mjs",
+    "responsive": "node tests/e2e/responsive.mjs",
+    "content:check": "node scripts/values/validate.mjs && node scripts/story/validate.mjs",
+    "values:generate": "node scripts/values/generate.mjs",
+    "story:extract": "node scripts/story/extract-issue.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
@@ -25,6 +29,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
@@ -32,6 +37,7 @@
     "playwright": "^1.56.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.1",
+    "zod": "^4.6.5"
   }
 }

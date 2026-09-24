@@ -3,6 +3,7 @@ import type { Hint, Item, MistakeType, StrategyId } from './types';
 import { pick, randInt, shuffle, type Rng } from '../core/rng';
 import { LANGUAGE_GENERATORS } from './content/language';
 import { SCIENCE_GENERATORS } from './content/science';
+import { MATH_READING_GENERATORS } from './content/mathReading';
 
 export type Tier = 1 | 2 | 3;
 export type Draft = Omit<Item, 'id' | 'nodeId' | 'tier' | 'difficulty'> & { key: string };
@@ -426,6 +427,7 @@ const GENERATORS: Record<string, (rng: Rng, tier: Tier) => Draft> = {
   g_word: word,
   ...LANGUAGE_GENERATORS,
   ...SCIENCE_GENERATORS,
+  ...MATH_READING_GENERATORS,
 };
 
 export function generateItem(nodeId: string, tier: Tier, rng: Rng): Item {

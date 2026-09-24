@@ -16,7 +16,8 @@ Vitest. No backend yet: everything is local-first. Deploys as a static site.
 - `npm run build` - static build to `dist/`
 - `node build-artifact.mjs <outDir>` - single-file HTML build (JS and CSS inlined) for sandboxed hosting
 
-Run `npm run typecheck && npm test` before every commit.
+Run `npm run typecheck && npm test` before every commit. Content changes: also
+`node scripts/values/validate.mjs && node scripts/story/validate.mjs`.
 
 ## Map
 - `src/brain/` - the learning engine. `curriculum.ts` (math nodes, strategies, mistake texts),
@@ -26,13 +27,18 @@ Run `npm run typecheck && npm test` before every commit.
 - `src/minigames/subject/SubjectWorld.tsx` - one component for every curriculum world
   (mines = math, library = language, lab = science), configured by `WORLDS`.
 - `src/minigames/arena/` - tic-tac-toe, connect four, Towers of Hanoi (`engines.ts` is pure and tested).
-- `src/minigames/village/` - SEL scenarios (no scoring by design).
+- `src/minigames/village/` - SEL scenarios (no scoring by design) and the values quiz
+  (`valuesBank.ts` loads every `src/content/values/*.json`, picks rounds, shuffles options).
+- `src/minigames/story/` - bedtime story reader; content in `src/content/story/` (docs/STORY.md).
+- `scripts/values/`, `scripts/story/` - content validators (run in CI) and Claude API generators.
 - `src/world/` - the 3D island, avatar, portals, input (`controls.ts`).
 - `src/economy/` - coins, shop, collectibles, weekly goal. `src/data/db.ts` - storage.
 - `src/theme/tokens.css` - all design tokens. The visual design will come from an external design
   system: change tokens, not component CSS.
 
 ## Non-negotiables
+- Values bank items are third person with infinitive options and no gender markers; never
+  rely on option order (the app shuffles).
 - Every child-facing Hebrew string addressed to the child uses gender markers `{m|f}` and goes
   through `g(text, gender)`. Never hard-code masculine forms.
 - Content is curriculum-aligned and factually checked. New nodes cite their source document.

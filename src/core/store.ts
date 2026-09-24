@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { savePlayer, type PlayerDoc } from '../data/db';
 
-export type Screen = 'loading' | 'profiles' | 'world' | 'mines' | 'library' | 'lab' | 'village' | 'arena' | 'parent';
-export type WorldId = 'mines' | 'library' | 'lab' | 'village' | 'arena';
+export type Screen = 'loading' | 'profiles' | 'world' | 'mines' | 'library' | 'lab' | 'village' | 'arena' | 'story' | 'parent';
+export type WorldId = 'mines' | 'library' | 'lab' | 'village' | 'arena' | 'story';
 
 interface AppState {
   screen: Screen;

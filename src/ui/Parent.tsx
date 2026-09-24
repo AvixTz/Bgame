@@ -5,6 +5,8 @@ import { buildReport, type ParentReport } from '../brain/insights';
 import type { NodeStatus } from '../brain/model';
 import { NODE_BY_ID } from '../brain/curriculum';
 import { SCENARIOS, SKILLS } from '../minigames/village/scenarios';
+import { VALUE_SKILLS, skillSummary } from '../minigames/village/valuesBank';
+import { CHAPTERS, chapterKey } from '../minigames/story/storyBank';
 
 const SUBJECTS = [
   { id: 'math', name: 'חשבון · מכרות המספרים', icon: '⛏️' },
@@ -164,9 +166,52 @@ export function Parent() {
             </div>
           </div>
 
+          <div className="grid2">
+            <ValuesSection values={player.values} />
+            <StorySection read={player.storyRead} />
+          </div>
+
           <p className="privacy">🔒 כל הנתונים נשמרים רק במכשיר הזה. זו גרסה ניסיונית. הנושאים מבוססים על תוכניות הלימודים של משרד החינוך (חשבון, חינוך לשוני, מדע וטכנולוגיה, כישורי חיים) ועדיין לא עברו אישור של מורה.</p>
         </>
       )}
+    </div>
+  );
+}
+
+function ValuesSection({ values }: { values?: Record<string, import('../data/db').ValueStat> }) {
+  const sum = skillSummary(values ?? {});
+  const rows = Object.entries(VALUE_SKILLS).filter(([id]) => sum[id]);
+  return (
+    <div className="card">
+      <h3>הבנת מצבים</h3>
+      {rows.length ? (
+        <table className="nodes">
+          <thead><tr><th>נושא</th><th>מצבים</th><th>הבין בבחירה הראשונה</th></tr></thead>
+          <tbody>
+            {rows.map(([id, name]) => (
+              <tr key={id}><td>{name}</td><td>{sum[id].answered}</td><td>{Math.round((sum[id].best / sum[id].answered) * 100)}%</td></tr>
+            ))}
+          </tbody>
+        </table>
+      ) : <p className="muted">עוד לא ענו על שאלות מצב.</p>}
+      <p className="muted small">הסדר של התשובות מתערבב בכל פעם, כך שאי אפשר לנחש לפי מיקום. נושא עם אחוז נמוך הוא הזמנה לשיחה, לא ציון. מצבים שלא הובנו חוזרים אחרי כמה ימים.</p>
+    </div>
+  );
+}
+
+function StorySection({ read }: { read?: Record<string, string> }) {
+  const done = CHAPTERS.filter((c) => read?.[chapterKey(c)]);
+  const last = done.at(-1);
+  return (
+    <div className="card">
+      <h3>סיפור לילה</h3>
+      {done.length ? (
+        <>
+          <p>נקראו {done.length} פרקים. האחרון: <b>{last!.title}</b></p>
+          {last!.learning?.issue && <p>הנושא בפרק: {last!.learning.issue}</p>}
+          {last!.learning?.parentNote && <p className="muted">{last!.learning.parentNote}</p>}
+        </>
+      ) : <p className="muted">עוד לא נקראו פרקים.</p>}
     </div>
   );
 }

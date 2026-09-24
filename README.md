@@ -6,12 +6,13 @@ The full plan (three phases, research, curriculum map) is in [docs/PLAN.md](docs
 
 ## What works in this version
 
-- **Third-person island** with 5 open portals, a Thinking Tree that grows with mastery, keyboard + a floating touch joystick (drift fixed and covered by an automated test).
-- **⛏️ Mines of Numbers** (math): 13 topics for grades ב-ג, a placement journey, and a mistake-pattern classifier.
+- **Third-person island** with 6 open portals, a Thinking Tree that grows with mastery, keyboard + a floating touch joystick (drift fixed and covered by an automated test).
+- **⛏️ Mines of Numbers** (math): 13 topics for grades ב-ג, a placement journey, and a mistake-pattern classifier. New in v0.4: math + reading - numbers in words, exercises written in words, and short word problems (one and two steps).
 - **📚 Library of Words** (language): 8 topics - gender and number agreement, singular/plural (including exceptions), punctuation, opposites, synonyms, word families, roots, and reading comprehension with short stories (explicit, sequence, inference).
 - **🔬 Nature Lab** (science): 8 topics - living/non-living, states of matter, materials, animals and habitats, teeth, plants, electricity and safety, mixtures. Common misconceptions get a dedicated explanation.
-- **♟️ Thinking Arena**: tic-tac-toe, connect four (the original's blocking bug fixed) and the Towers of Hanoi. Difficulty adapts: two wins → up a level, three losses → down. The game records when the child spots a threat or misses a winning move, which feeds the "spot a threat" and "think a step ahead" strategies.
-- **🤝 Friends Village** (values and friendship): 8 social situations with choices, consequences, a named skill and a question to talk about at home. No score, by design.
+- **♟️ Thinking Arena**: tic-tac-toe, connect four (the original's blocking bug fixed) and the Towers of Hanoi. Three levels the child picks (1 beginners, 2 advanced, 3 champions). The computer plays by fixed, visible rules, never randomly; level 3 plays perfect tic-tac-toe, searches 7 moves ahead in connect four, and hides the hints in Hanoi. After two wins the game suggests the next level. The game records when the child spots a threat or misses a winning move, which feeds the "spot a threat" and "think a step ahead" strategies.
+- **🤝 Friends Village** (values and friendship): 8 story scenarios plus **situation questions** - a bank of 756 situations across 12 skills, drawn at random in rounds of 8. The answer order is reshuffled every time, so the only way to the good answer is to understand the situation. Weaker choices show what happens and the child tries again; situations not understood come back after 3 days. The bank grows automatically (see below).
+- **🌙 Bedtime story**: one chapter a night, opened by date, read aloud with the current paragraph highlighted, adjustable text size, a good-night question and a note for parents. Adding chapters: `docs/STORY.md`.
 - **The brain**: Elo per topic and per thinking strategy, mastery, spaced review, a daily journey in every world, and 3-level hints.
 - **Rewards**: coins for success, a weekly goal of 5 out of 7 days, an avatar shop and surprise treasures.
 - **Parents' area**: strengths and gaps per subject, mistake patterns, arena levels, the social tools the child has met, and a question for the evening.
@@ -25,8 +26,14 @@ npm install
 npm run dev        # development at http://localhost:5173
 npm test           # unit tests: brain, content, game engines
 npm run playtest   # full browser playtest (requires npx vite preview --port 4173)
+npm run responsive # screenshots at 6 screen sizes, fails on horizontal overflow
 npm run build      # static build into dist/
 ```
+
+## Content pipelines
+
+- **Situation questions**: `src/content/values/*.json` (format: `src/content/values/SCHEMA.md`). `node scripts/values/validate.mjs` checks every file. `scripts/values/generate.mjs` writes new batches with the Claude API, and the `values-generate` workflow runs it every Sunday and opens a PR for review. It needs the repository secret `ANTHROPIC_API_KEY`. New files join the game without code changes.
+- **Bedtime story**: `src/content/story/<story>/chapters/NN.json`. `node scripts/story/validate.mjs` checks them; `scripts/story/extract-issue.mjs` suggests the learning issue and questions of each chapter for review.
 
 ## Moving to your own server (production)
 

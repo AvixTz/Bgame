@@ -23,9 +23,15 @@ export interface PlayerDoc {
   journeyDays?: Record<string, string>;
   arena?: Record<string, ArenaStat>;
   village?: Record<string, string[]>;
+  /** Values quiz: per item, how the child answered the first time it was shown each round. */
+  values?: Record<string, ValueStat>;
+  /** Bedtime story: chapter keys ("storyId/NN") the child has read, with the day. */
+  storyRead?: Record<string, string>;
 }
 
-export interface ArenaStat { level: number; wins: number; losses: number; draws: number; lossStreak: number; winStreak: number; best?: number }
+export interface ValueStat { seen: number; lastAt: number; first: 'best' | 'ok' | 'poor' }
+
+export interface ArenaStat { level: number; wins: number; losses: number; draws: number; lossStreak: number; winStreak: number; best?: number; wonLevels?: number[] }
 
 class BgameDB extends Dexie {
   players!: Table<PlayerDoc, string>;

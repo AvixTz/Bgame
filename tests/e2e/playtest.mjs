@@ -107,9 +107,12 @@ if (await enter(1.75, 'מעבדת הטבע')) {
   await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
 }
 // arena
-if (await enter(0.35, 'ארנה החשיבה')) {
+if (await enter(0.5, 'ארנה החשיבה')) {
   await shot('07-arena');
   await page.click('text=איקס עיגול'); await page.waitForTimeout(300);
+  await page.click('.level-picker [role=radio] >> nth=2'); await page.waitForTimeout(200);
+  await shot('07b-level-3');
+  await page.click('.level-picker [role=radio] >> nth=0'); await page.waitForTimeout(200);
   for (let k = 0; k < 6; k++) {
     if (await page.$('text=עוד משחק')) break;
     const cells = await page.$$('.ttt-cell');
@@ -143,7 +146,33 @@ if (await enter(-1.75, 'כפר החברים')) {
   await shot('12-village-outcome');
   await page.click('text=סיימתי'); await page.waitForTimeout(200);
   await shot('13-village-reflect');
+  await page.click('text=חזרה לכפר');
+  // values quiz: a full round of 8 situations, trying options until the best one is found
+  await page.click('button:has-text("סבב")'); await page.waitForTimeout(300);
+  for (let k = 0; k < 60; k++) {
+    if (await page.$('text=סיימת סבב')) break;
+    const next = await page.$('.values-q button:has-text("המשך"), .values-q button:has-text("סיימתי")');
+    if (next) { await next.click(); await page.waitForTimeout(150); continue; }
+    const ch = await page.$$('.values-q .choice:not([disabled])');
+    if (!ch.length) { await page.waitForTimeout(150); continue; }
+    await ch[0].click(); await page.waitForTimeout(120);
+    if (k === 0) await shot('13b-values-feedback');
+  }
+  results.valuesRoundDone = !!(await page.$('text=סיימת סבב'));
+  await shot('13c-values-end');
   await page.click('text=חזרה לכפר'); await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
+}
+// bedtime story
+if (await enter(-0.62, 'סיפור לילה')) {
+  await shot('13d-story-lobby');
+  await page.click('.story-tonight'); await page.waitForTimeout(300);
+  await shot('13e-story-reader');
+  await page.click('button:has-text("סיימתי לקרוא")'); await page.waitForTimeout(300);
+  const opts = await page.$$('.story-q .choice:not([disabled])');
+  for (const o of opts) { if (await page.$('.story-q .choice.right')) break; await o.click(); await page.waitForTimeout(100); }
+  results.storyAnswered = !!(await page.$('.story-q .choice.right'));
+  await page.screenshot({ path: `${OUT}/13f-story-goodnight.png`, fullPage: true });
+  await page.click('text=לכל הפרקים'); await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
 }
 // parent
 await page.click('[aria-label="אזור הורים"]');
@@ -157,10 +186,11 @@ await page.click('text=חזרה למשחק'); await page.waitForTimeout(500);
 await page.setViewportSize({ width: 390, height: 844 });
 await page.waitForTimeout(800);
 await shot('15-phone-world');
+console.log('RESULTS', JSON.stringify(results));
 console.log('ERRORS:', errors.length ? errors.join('\n') : 'none');
 await browser.close();
 const drifts = ['driftAfterRelease', 'driftAfterReleaseOutside', 'driftAfterPortalDrag', 'driftAfterKeyUp'].map((k) => Number(results[k]));
-if (errors.length || drifts.some((d) => d > 0.1) || Number(results.joystickMoves) < 0.5) {
+if (errors.length || drifts.some((d) => d > 0.1) || Number(results.joystickMoves) < 0.5 || !results.valuesRoundDone || !results.storyAnswered) {
   console.error('PLAYTEST FAILED', { drifts, errors });
   process.exit(1);
 }

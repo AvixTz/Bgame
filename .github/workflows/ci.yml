@@ -17,6 +17,8 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - run: node scripts/values/validate.mjs
+      - run: node scripts/story/validate.mjs
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

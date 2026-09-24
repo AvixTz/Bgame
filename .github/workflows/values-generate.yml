@@ -1,0 +1,56 @@
+name: values-generate
+
+# Grows the values question bank every week and opens a PR for human review.
+# Needs the repository secret ANTHROPIC_API_KEY (Settings -> Secrets and variables -> Actions).
+on:
+  schedule:
+    - cron: '0 5 * * 0' # Sunday 05:00 UTC
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: 'One skill (empty = all 12)'
+        required: false
+        default: ''
+      count:
+        description: 'New items per skill'
+        required: false
+        default: '12'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - name: Generate
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SKILL: ${{ github.event.inputs.skill }}
+          COUNT: ${{ github.event.inputs.count || '12' }}
+        run: |
+          if [ -n "$SKILL" ]; then node scripts/values/generate.mjs --count "$COUNT" --skill "$SKILL"
+          else node scripts/values/generate.mjs --count "$COUNT"; fi
+      - run: node scripts/values/validate.mjs
+      - run: npm run typecheck
+      - run: npm test
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bot/values-bank
+          delete-branch: true
+          commit-message: 'content(values): new generated situations'
+          title: 'שאלות מצב חדשות למאגר הערכים'
+          body: |
+            נוצר אוטומטית ע"י scripts/values/generate.mjs ועבר validate.mjs.
+            לפני מיזוג: לקרוא כל פריט, לוודא שהתשובה הטובה באמת הטובה ושהעברית טבעית.
+          labels: content

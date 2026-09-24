@@ -2,6 +2,25 @@
 
 Versions follow `MAJOR.MINOR.PATCH`. Each release is a git tag (`v0.2.0`) with a GitHub release.
 
+## v0.4.0 - 2026-09-24 - levels, situation questions, bedtime story
+- Arena: levels 1-3 chosen by the child. The computer follows fixed rules shown on screen (no
+  randomness): level 3 never loses tic-tac-toe, searches 7 moves ahead in connect four, and Hanoi
+  level 3 has 5 disks with no hints. Won levels get a trophy; the game suggests, never forces.
+- Math + reading: numbers in words (both directions), exercises written in words, and word problems
+  with gendered names and correct Hebrew number agreement (`hebrewNumbers.ts`).
+- Values: a bank of 756 situation questions across 12 skills, reviewed for Hebrew and ambiguity.
+  Rounds of 8 mix skills, prefer unseen items and bring back misunderstood ones after 3 days. The
+  options are reshuffled on every showing (tested for a uniform position of the good answer).
+  Parents see the share understood on the first choice per skill.
+- Automatic growth: `scripts/values/generate.mjs` (Claude API, structured output, validation) and a
+  weekly workflow that opens a PR for review.
+- Bedtime story: a new portal with a night tent landmark, one chapter a night by publish date,
+  read-aloud with paragraph highlighting, text size control, good-night question, parent note.
+  Chapter format and tooling in `docs/STORY.md`; `scripts/story/extract-issue.mjs` suggests each
+  chapter's learning issue.
+- Responsive: new audit at 6 screen sizes (phones portrait and landscape, tablet, laptop, desktop)
+  with an overflow check; fixes for narrow phones and short landscape screens.
+
 ## v0.3.0 - 2026-09-24 - "Clay Island" design
 - New design system (`src/theme/tokens.css`): claymorphism for kids, Fredoka + Rubik (both with
   Hebrew), island palette, soft double shadows, chunky pressable buttons, spring motion tokens.

@@ -9,6 +9,7 @@ import { Parent } from './ui/Parent';
 import { SubjectWorld, WORLDS } from './minigames/subject/SubjectWorld';
 import { Arena } from './minigames/arena/Arena';
 import { Village } from './minigames/village/Village';
+import { Story } from './minigames/story/Story';
 import { PORTALS } from './world/portals';
 import { bindKeyboard, resetInput } from './world/controls';
 import { sfx } from './core/audio';
@@ -62,6 +63,7 @@ export function App() {
       )}
       {screen === 'arena' && <Arena onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
       {screen === 'village' && <Village onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
+      {screen === 'story' && <Story onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
       {screen === 'parent' && <Parent />}
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
       {wipe && <div className="wipe" style={{ ['--wipe' as string]: wipe }} aria-hidden />}

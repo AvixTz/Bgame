@@ -6,17 +6,17 @@ import { useApp } from '../../core/store';
 import type { ArenaStat } from '../../data/db';
 import { newStrategy, updateStrategy } from '../../brain/model';
 import type { StrategyId } from '../../brain/types';
-import { g, makeRng } from '../../core/rng';
+import { g } from '../../core/rng';
 import { sfx } from '../../core/audio';
 import {
   tttAiMove, tttFull, tttWinner, tttWinningMove, type TttBoard,
   c4AiMove, c4Drop, c4Empty, c4Valid, c4Winner, c4WinningCol, C4_COLS, type C4Board,
-  hanoiCanMove, hanoiHint, hanoiMove, hanoiOptimal, hanoiSolved, hanoiStart, type Pegs,
+  hanoiCanMove, hanoiHint, hanoiMove, hanoiOptimal, hanoiSolved, hanoiStart, hanoiDisks, type Pegs,
+  TTT_RULES, C4_RULES, HANOI_RULES,
 } from './engines';
 
 type GameId = 'ttt' | 'c4' | 'hanoi';
 type Result = 'win' | 'loss' | 'draw';
-const rng = makeRng((Date.now() ^ 0x5eed) >>> 0);
 
 const GAMES: { id: GameId; name: string; emoji: string; strategy: string; desc: string }[] = [
   { id: 'ttt', name: 'איקס עיגול', emoji: '❌⭕', strategy: 'לזהות איום 🛡️', desc: 'שלושה בשורה. לפני כל מהלך בודקים: יש ליריב שניים בשורה?' },
@@ -24,6 +24,7 @@ const GAMES: { id: GameId; name: string; emoji: string; strategy: string; desc: 
   { id: 'hanoi', name: 'מגדלי האנוי', emoji: '🗼', strategy: 'לעבוד מהסוף להתחלה ⏪', desc: 'מעבירים את המגדל לעמוד הימני. דיסק גדול לא יושב על קטן.' },
 ];
 const LEVEL_NAME = ['', 'מתחילים', 'מתקדמים', 'אלופים'];
+const RULES: Record<GameId, Record<number, string[]>> = { ttt: TTT_RULES, c4: C4_RULES, hanoi: HANOI_RULES };
 const newStat = (): ArenaStat => ({ level: 1, wins: 0, losses: 0, draws: 0, lossStreak: 0, winStreak: 0 });
 
 /** Records a strategy observation from real play (a missed block counts as a miss on "spot_threat"). */
@@ -40,15 +41,20 @@ export function Arena({ onExit }: { onExit: () => void }) {
   const G = (t: string) => g(t, p.gender);
   const stat = (id: GameId) => p.arena?.[id] ?? newStat();
 
-  /** Adaptive level: two wins in a row → up, three losses in a row → down. Coins reward the level reached. */
+  /**
+   * The child picks the level (1-3). The game never changes it silently: after two wins in a row it
+   * suggests the next level, after three losses in a row it suggests an easier one. Coins scale with level.
+   */
+  const setLevel = (id: GameId, level: number) => updatePlayer((pl) => ({ ...pl, arena: { ...(pl.arena ?? {}), [id]: { ...(pl.arena?.[id] ?? newStat()), level, winStreak: 0, lossStreak: 0 } } }));
   const finish = (id: GameId, result: Result, extra: { coins?: number; best?: number } = {}) => {
     const s = { ...stat(id) };
     let msg = '';
     if (result === 'win') { s.wins++; s.winStreak++; s.lossStreak = 0; }
     else if (result === 'loss') { s.losses++; s.lossStreak++; s.winStreak = 0; }
     else { s.draws++; s.winStreak = 0; s.lossStreak = 0; }
-    if (s.winStreak >= 2 && s.level < 3) { s.level++; s.winStreak = 0; msg = G(`⬆️ עלית לרמת ${LEVEL_NAME[s.level]}!`); }
-    if (s.lossStreak >= 3 && s.level > 1) { s.level--; s.lossStreak = 0; msg = 'נתאמן רגע ברמה קלה יותר, ואז נחזור.'; }
+    if (result === 'win') s.wonLevels = [...new Set([...(s.wonLevels ?? []), s.level])];
+    if (s.winStreak >= 2 && s.level < 3) msg = G(`שני ניצחונות ברצף! מוכ{ן|נה} לנסות רמה ${s.level + 1}?`);
+    if (s.lossStreak >= 3 && s.level > 1) msg = 'אפשר לתרגל רגע ברמה קלה יותר, ואז לחזור.';
     if (extra.best !== undefined) s.best = s.best === undefined ? extra.best : Math.min(s.best, extra.best);
     const coins = extra.coins ?? (result === 'win' ? 3 * stat(id).level : result === 'draw' ? stat(id).level : 0);
     updatePlayer((pl) => ({ ...pl, coins: pl.coins + coins, arena: { ...(pl.arena ?? {}), [id]: s } }));
@@ -74,15 +80,36 @@ export function Arena({ onExit }: { onExit: () => void }) {
                 <b>{gm.name}</b>
                 <span className="muted small">{gm.desc}</span>
                 <span className="tag">אסטרטגיה: {gm.strategy}</span>
-                <span className="small">רמה: {'⭐'.repeat(s.level)}{'☆'.repeat(3 - s.level)} {LEVEL_NAME[s.level]} · ניצחונות: {s.wins}</span>
+                <span className="level-stars" aria-label={`רמות שניצחת בהן: ${(s.wonLevels ?? []).join(', ') || 'אין עדיין'}`}>
+                  {[1, 2, 3].map((l) => <span key={l} className={`lvl ${(s.wonLevels ?? []).includes(l) ? 'won' : ''}`}>{l}</span>)}
+                  <small>ניצחונות: {s.wins}</small>
+                </span>
               </button>
             );
           })}
         </div>
       )}
-      {game === 'ttt' && <TicTacToe level={stat('ttt').level} onEnd={(r) => finish('ttt', r)} />}
-      {game === 'c4' && <ConnectFour level={stat('c4').level} onEnd={(r) => finish('c4', r)} />}
-      {game === 'hanoi' && <Hanoi level={stat('hanoi').level} best={stat('hanoi').best} onEnd={(r, moves, n) => finish('hanoi', r, { best: moves, coins: r === 'win' ? 5 * (n - 2) : 1 })} />}
+      {game && <LevelPicker game={game} level={stat(game).level} won={stat(game).wonLevels ?? []} onPick={(l) => setLevel(game, l)} />}
+      {game === 'ttt' && <TicTacToe key={`ttt-${stat('ttt').level}`} level={stat('ttt').level} onEnd={(r) => finish('ttt', r)} />}
+      {game === 'c4' && <ConnectFour key={`c4-${stat('c4').level}`} level={stat('c4').level} onEnd={(r) => finish('c4', r)} />}
+      {game === 'hanoi' && <Hanoi key={`h-${stat('hanoi').level}`} level={stat('hanoi').level} best={stat('hanoi').best} onEnd={(r, moves, n) => finish('hanoi', r, { best: moves, coins: r === 'win' ? 5 * (n - 2) : 1 })} />}
+    </div>
+  );
+}
+
+function LevelPicker({ game, level, won, onPick }: { game: GameId; level: number; won: number[]; onPick: (l: number) => void }) {
+  return (
+    <div className="card level-picker">
+      <div className="seg" role="radiogroup" aria-label="בחירת רמה">
+        {[1, 2, 3].map((l) => (
+          <button key={l} role="radio" aria-checked={level === l} className={level === l ? 'on' : ''} onClick={() => { sfx.tap(); onPick(l); }}>
+            <span className="lvl-num">{l}</span> {LEVEL_NAME[l]} {won.includes(l) && <Trophy className="icon" />}
+          </button>
+        ))}
+      </div>
+      <ul className="rules">
+        {RULES[game][level].map((r) => <li key={r}>{r}</li>)}
+      </ul>
     </div>
   );
 }
@@ -114,7 +141,7 @@ function TicTacToe({ level, onEnd }: { level: number; onEnd: (r: Result) => numb
   const aiStarts = round % 2 === 1;
   useEffect(() => {
     const nb = Array(9).fill(0);
-    if (aiStarts) nb[tttAiMove(nb, level, rng)] = 2;
+    if (aiStarts) nb[tttAiMove(nb, level)] = 2;
     setB(nb); setEnd(null); setCoach(''); setHint(-1); missedBlock.current = false;
   }, [round]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -145,7 +172,7 @@ function TicTacToe({ level, onEnd }: { level: number; onEnd: (r: Result) => numb
     if (conclude(nb)) return;
     setBusy(true);
     setTimeout(() => {
-      const ai = [...nb]; ai[tttAiMove(ai, level, rng)] = 2;
+      const ai = [...nb]; ai[tttAiMove(ai, level)] = 2;
       setB(ai); setBusy(false);
       conclude(ai);
     }, 450);
@@ -226,7 +253,7 @@ function ConnectFour({ level, onEnd }: { level: number; onEnd: (r: Result) => nu
     setBusy(true);
     setTimeout(() => {
       const ai = nb.map((r) => [...r]);
-      c4Drop(ai, c4AiMove(ai, level, rng), 2);
+      c4Drop(ai, c4AiMove(ai, level), 2);
       setB(ai); setBusy(false);
       conclude(ai);
     }, 450);
@@ -264,7 +291,8 @@ function Hanoi({ level, best, onEnd }: { level: number; best?: number; onEnd: (r
   const { player } = useApp();
   const G = (t: string) => g(t, player!.gender);
   const log = useStrategyLog();
-  const n = level + 2;
+  const n = hanoiDisks(level);
+  const strict = level === 3;
   const [round, setRound] = useState(0);
   const [pegs, setPegs] = useState<Pegs>(() => hanoiStart(n));
   const [sel, setSel] = useState<number | null>(null);
@@ -283,7 +311,8 @@ function Hanoi({ level, best, onEnd }: { level: number; best?: number; onEnd: (r
     if (!hanoiCanMove(pegs, sel, i)) { sfx.wrong(); setCoach('דיסק גדול לא יכול לשבת על דיסק קטן יותר.'); setSel(null); return; }
     const next = hanoiMove(pegs, sel, i);
     const m = moves + 1;
-    setPegs(next); setMoves(m); setSel(null); setCoach(''); setHintMove(null); sfx.tap();
+    setPegs(next); setMoves(m); setSel(null); setHintMove(null); sfx.tap();
+    setCoach(strict && m === hanoiOptimal(n) + 1 ? 'עברת את מספר המהלכים הכי קטן. ברמה 3 הניצחון הוא רק ב-31 מהלכים. אפשר להמשיך לתרגל או להתחיל מחדש.' : '');
     if (hanoiSolved(next, n)) {
       const optimal = m === hanoiOptimal(n);
       log('work_backwards', optimal && hintsUsed.current === 0);
@@ -326,7 +355,7 @@ function Hanoi({ level, best, onEnd }: { level: number; best?: number; onEnd: (r
       {coach && <p className="coach-line"><Lightbulb className="icon" /> <span>{coach}</span></p>}
       {end ? <EndBar {...end} onAgain={() => setRound((r) => r + 1)} /> : (
         <div className="row">
-          <button className="btn btn-ghost" onClick={giveHint}><Lightbulb className="icon" /> רמז</button>
+          {!strict && <button className="btn btn-ghost" onClick={giveHint}><Lightbulb className="icon" /> רמז</button>}
           <button className="btn btn-ghost" onClick={() => setRound((r) => r + 1)}><RotateCcw className="icon" /> מההתחלה</button>
         </div>
       )}

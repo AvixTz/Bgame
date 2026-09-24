@@ -44,3 +44,27 @@ export function speak(text: string) {
     speechSynthesis.speak(u);
   } catch { /* speech unavailable */ }
 }
+
+/**
+ * Reads paragraphs one after another (for the bedtime story), reporting which one is being read
+ * so the page can highlight it. Returns a stop function.
+ */
+export function speakParagraphs(paragraphs: string[], onIndex: (i: number) => void, onDone: () => void): () => void {
+  if (muted || typeof speechSynthesis === 'undefined') { onDone(); return () => {}; }
+  let stopped = false;
+  const voice = speechSynthesis.getVoices().find((v) => v.lang.startsWith('he'));
+  const say = (i: number) => {
+    if (stopped) return;
+    if (i >= paragraphs.length) { onIndex(-1); onDone(); return; }
+    onIndex(i);
+    const u = new SpeechSynthesisUtterance(paragraphs[i]);
+    u.lang = 'he-IL';
+    if (voice) u.voice = voice;
+    u.rate = 0.85;
+    u.onend = () => say(i + 1);
+    u.onerror = () => { if (!stopped) { onIndex(-1); onDone(); } };
+    speechSynthesis.speak(u);
+  };
+  try { speechSynthesis.cancel(); say(0); } catch { onDone(); }
+  return () => { stopped = true; try { speechSynthesis.cancel(); } catch { /* ignore */ } onIndex(-1); };
+}
