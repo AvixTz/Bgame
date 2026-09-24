@@ -6,16 +6,16 @@ The full plan (three phases, research, curriculum map) is in [docs/PLAN.md](docs
 
 ## What works in this version
 
-- **Island in third person**: movement with arrow keys/WASD or a touch joystick, portals to 5 worlds (the mines are open, the rest say "coming soon"), and a Thinking Tree that grows with every mastered topic.
-- **Player profiles**: several children on one device. Each has a nickname (not a full name), boy/girl for Hebrew addressing, a grade, and an avatar color.
-- **Placement journey**: 6 adaptive exercises that find where the child really stands.
-- **Mines of Numbers**: 13 curriculum topics for grades ב-ג (tens and units, addition and subtraction with and without regrouping, missing numbers, the multiplication table, division with and without remainder, word problems), 3 difficulty tiers per topic.
-- **Daily journey**: 8 exercises. Due reviews come first, then the topic that needs work, and occasionally a new topic.
-- **The brain**: Elo per topic and per thinking strategy, a success target of about 80%, mastery, spaced review (1-3-7-14-30 days), and classification of mistake patterns (forgot the carry, subtracted smaller from larger, skip-count slip...).
-- **Hints in 3 levels**, a second try after a mistake with feedback on the specific mistake, a worked solution, and a question after solving: "how did you solve it?"
-- **Rewards**: coins for success (not for time), mastery badges, surprise treasures, an avatar shop, and a weekly goal of 5 out of 7 days with no "you lost your streak".
-- **Parents' area** (hold for 3 seconds): strengths, what to strengthen, mistake patterns, strategies, a topic map, and a question for an evening conversation.
-- Everything is saved in the device's IndexedDB. There is no server yet.
+- **Third-person island** with 5 open portals, a Thinking Tree that grows with mastery, keyboard + a floating touch joystick (drift fixed and covered by an automated test).
+- **⛏️ Mines of Numbers** (math): 13 topics for grades ב-ג, a placement journey, and a mistake-pattern classifier.
+- **📚 Library of Words** (language): 8 topics - gender and number agreement, singular/plural (including exceptions), punctuation, opposites, synonyms, word families, roots, and reading comprehension with short stories (explicit, sequence, inference).
+- **🔬 Nature Lab** (science): 8 topics - living/non-living, states of matter, materials, animals and habitats, teeth, plants, electricity and safety, mixtures. Common misconceptions get a dedicated explanation.
+- **♟️ Thinking Arena**: tic-tac-toe, connect four (the original's blocking bug fixed) and the Towers of Hanoi. Difficulty adapts: two wins → up a level, three losses → down. The game records when the child spots a threat or misses a winning move, which feeds the "spot a threat" and "think a step ahead" strategies.
+- **🤝 Friends Village** (values and friendship): 8 social situations with choices, consequences, a named skill and a question to talk about at home. No score, by design.
+- **The brain**: Elo per topic and per thinking strategy, mastery, spaced review, a daily journey in every world, and 3-level hints.
+- **Rewards**: coins for success, a weekly goal of 5 out of 7 days, an avatar shop and surprise treasures.
+- **Parents' area**: strengths and gaps per subject, mistake patterns, arena levels, the social tools the child has met, and a question for the evening.
+- **Claude Code project structure**: CLAUDE.md, AGENTS.md, .mcp.json, and `.claude/` with rules, skills (project skills + vendored skills), sub-agents and hooks.
 
 ## Running
 
@@ -23,7 +23,8 @@ The full plan (three phases, research, curriculum map) is in [docs/PLAN.md](docs
 cd Bgame
 npm install
 npm run dev        # development at http://localhost:5173
-npm test           # tests for the brain (generators, model, insights)
+npm test           # unit tests: brain, content, game engines
+npm run playtest   # full browser playtest (requires npx vite preview --port 4173)
 npm run build      # static build into dist/
 ```
 
@@ -47,7 +48,9 @@ src/brain/       curriculum, exercise generators, learner model, parent insights
 src/economy/     coins, shop, collectibles, weekly goal
 src/data/        local storage (Dexie/IndexedDB with a memory fallback)
 src/world/       the 3D island: avatar, portals, controls
-src/minigames/   the Mines of Numbers
+src/minigames/   subject/ (mines, library, lab), arena/, village/
+src/theme/       tokens.css - all design tokens (for the future design system)
+.claude/         rules, skills, agents, hooks (open Claude Code in this folder)
 src/ui/          profiles, HUD, shop, parents' area
 ```
 
@@ -55,4 +58,4 @@ src/ui/          profiles, HUD, shop, parents' area
 
 - Curriculum topics are based on Ministry of Education documents and have not yet been approved by a teacher.
 - Hebrew text-to-speech depends on the device (a Hebrew voice exists on Android, iOS and Windows; not always on Linux).
-- Only the Mines of Numbers world is open. The library, lab, village and arena are marked "coming soon".
+- The design is temporary. It will be replaced through `src/theme/tokens.css` and the external design system.

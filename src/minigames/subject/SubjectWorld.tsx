@@ -6,7 +6,7 @@ import {
   chooseTier, newSkill, newStrategy, nodeStatus, placementNext, placementStart, PLACEMENT_ANCHORS,
   priorTheta, recommend, seedFromPlacement, updateSkill, updateStrategy, expected, type NodeStatus,
 } from '../../brain/model';
-import type { Attempt, Grade, Item, MistakeType, StrategyId } from '../../brain/types';
+import type { Attempt, Grade, Item, MistakeType, StrategyId, Subject } from '../../brain/types';
 import { COINS, JOURNEY_LENGTH, dayKey, rollSurprise, type Collectible } from '../../economy/economy';
 import { addAttempt, type PlayerDoc } from '../../data/db';
 import { g, makeRng, pick } from '../../core/rng';
@@ -33,14 +33,34 @@ interface Session {
 
 const rng = makeRng(Date.now() & 0xffffffff);
 
-const STATUS_UI: Record<NodeStatus, { icon: string; label: string }> = {
+export interface WorldConfig {
+  id: string;
+  subject: Subject;
+  title: string;
+  emoji: string;
+  /** Word for a topic in this world: מנהרה in the mines, מדף in the library... */
+  topicWord: string;
+  learningLabel: string;
+  masteredIcon: string;
+  placement: boolean;
+  /** Short intro line on the world's lobby. */
+  intro: string;
+}
+
+export const WORLDS: Record<'mines' | 'library' | 'lab', WorldConfig> = {
+  mines: { id: 'mines', subject: 'math', title: 'מכרות המספרים', emoji: '⛏️', topicWord: 'מנהרה', learningLabel: 'בחפירה', masteredIcon: '💎', placement: true, intro: 'כל מנהרה היא נושא בחשבון.' },
+  library: { id: 'library', subject: 'language', title: 'ספריית המילים', emoji: '📚', topicWord: 'מדף', learningLabel: 'בקריאה', masteredIcon: '📜', placement: false, intro: 'כל מדף הוא נושא בלשון: דקדוק, אוצר מילים והבנת הנקרא.' },
+  lab: { id: 'lab', subject: 'science', title: 'מעבדת הטבע', emoji: '🔬', topicWord: 'ניסוי', learningLabel: 'בניסוי', masteredIcon: '🧪', placement: false, intro: 'כל שולחן במעבדה הוא נושא במדע: חומרים, בעלי חיים, צמחים וחשמל.' },
+};
+
+const statusUi = (c: WorldConfig): Record<NodeStatus, { icon: string; label: string }> => ({
   locked: { icon: '🔒', label: 'נעול' },
   new: { icon: '✨', label: 'חדש' },
-  learning: { icon: '⛏️', label: 'בחפירה' },
+  learning: { icon: c.emoji, label: c.learningLabel },
   struggling: { icon: '💪', label: 'מתאמנים' },
-  mastered: { icon: '💎', label: 'שולט!' },
+  mastered: { icon: c.masteredIcon, label: 'נכבש!' },
   review_due: { icon: '🔁', label: 'לחזרה' },
-};
+});
 
 const PRAISE = [
   (s: string) => `נכון! האסטרטגיה "${s}" עובדת כאן מצוין.`,
@@ -49,7 +69,7 @@ const PRAISE = [
   () => 'נכון! ככה בדיוק חושבים על זה.',
 ];
 
-export function Mines({ onExit }: { onExit: () => void }) {
+export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: () => void }) {
   const { player, updatePlayer, showToast } = useApp();
   const [session, setSession] = useState<Session | null>(null);
   const [item, setItem] = useState<Item | null>(null);
@@ -61,6 +81,7 @@ export function Mines({ onExit }: { onExit: () => void }) {
   const [feedback, setFeedback] = useState('');
   const [reflected, setReflected] = useState<StrategyId | 'knew' | null>(null);
   const [askReflect, setAskReflect] = useState(false);
+  const [wrongChoices, setWrongChoices] = useState<string[]>([]);
   const [summary, setSummary] = useState<Session | null>(null);
   const started = useRef(0);
 
@@ -79,7 +100,7 @@ export function Mines({ onExit }: { onExit: () => void }) {
       tier = chooseTier(sk, s.recent.slice(-2).every((x) => !x) && s.recent.length >= 2 ? 0.88 : 0.8);
       why = 'practice';
     } else {
-      const r = recommend(pl.skills, { now: Date.now(), grade: pl.grade, sessionRecent: s.recent, rng, avoidNode: s.lastNode });
+      const r = recommend(pl.skills, { now: Date.now(), grade: pl.grade, sessionRecent: s.recent, rng, avoidNode: s.lastNode, subject: config.subject });
       nodeId = r.nodeId; tier = r.tier; why = r.reason;
     }
     const it = generateItem(nodeId, tier, rng);
@@ -92,8 +113,9 @@ export function Mines({ onExit }: { onExit: () => void }) {
     setFeedback('');
     setReflected(null);
     setAskReflect(false);
+    setWrongChoices([]);
     started.current = Date.now();
-  }, []);
+  }, [config.subject]);
 
   const begin = (mode: Mode, fixedNode?: string) => {
     sfx.tap();
@@ -174,7 +196,8 @@ export function Mines({ onExit }: { onExit: () => void }) {
     } else {
       sfx.wrong();
       setPhase('revealed');
-      setFeedback(mode === 'placement' ? G('לא נורא! זה עוזר לנו לדעת מאיפה להתחיל. ממשיכים.') : G(MISTAKES[mistake ?? 'other'].kid));
+      const specific = item.choiceFeedback?.[given];
+      setFeedback(mode === 'placement' ? G('לא נורא! זה עוזר לנו לדעת מאיפה להתחיל. ממשיכים.') : specific ?? G(MISTAKES[mistake ?? 'other'].kid));
     }
     if (newlyMastered.length) {
       setTimeout(() => { sfx.win(); showToast(`💎 ${G('שלטת')} ב"${NODE_BY_ID[newlyMastered[0]].title}"! +${COINS.mastery}`); }, 500);
@@ -191,7 +214,10 @@ export function Mines({ onExit }: { onExit: () => void }) {
     if (phase === 'answer' && session?.mode !== 'placement') {
       sfx.wrong();
       setFirstMistake(mistake);
-      setFeedback(G(MISTAKES[mistake].kid) + ' ' + G('נס{ה|י} שוב!'));
+      // Retry feedback is informational: a known misconception, a classified mistake, or the pointer hint.
+      const retryText = item.choiceFeedback?.[given] ?? (mistake === 'other' ? `כמעט. 💡 ${item.hints[1].text}` : G(MISTAKES[mistake].kid));
+      setFeedback(retryText + ' ' + G('נס{ה|י} שוב!'));
+      if (item.choices) setWrongChoices((w) => [...w, given]);
       setPhase('retry');
       setValue('');
       return;
@@ -212,6 +238,7 @@ export function Mines({ onExit }: { onExit: () => void }) {
         const today = dayKey(t);
         return {
           ...pl,
+          journeyDays: { ...(pl.journeyDays ?? {}), [config.subject]: today },
           coins: pl.coins + COINS.journeyComplete,
           journeysCompleted: pl.journeysCompleted + 1,
           lastJourneyDay: today,
@@ -259,18 +286,20 @@ export function Mines({ onExit }: { onExit: () => void }) {
     () => Object.fromEntries(NODES.map((n) => [n.id, nodeStatus(n.id, p.skills, now)])) as Record<string, NodeStatus>,
     [p.skills, now],
   );
-  const journeyDoneToday = p.lastJourneyDay === dayKey(now);
+  const journeyDoneToday = (p.journeyDays?.[config.subject] ?? (config.subject === 'math' ? p.lastJourneyDay : undefined)) === dayKey(now);
+  const STATUS_UI = statusUi(config);
+  const needsPlacement = config.placement && !p.placementDone;
 
   // ---------- summary ----------
   if (summary) {
     const s = summary;
     return (
-      <div className="screen mines">
+      <div className={`screen mines world-${config.id}`}>
         <div className="card summary">
           {s.mode === 'placement' ? (
             <>
               <h2>🗺️ {G('מצאנו את נקודת ההתחלה שלך!')}</h2>
-              <p>המכרה יודע עכשיו מאיפה כדאי להתחיל, והוא ימשיך ללמוד {G('אותך')} בכל משחק.</p>
+              <p>המכרה יודע עכשיו מאיפה כדאי להתחיל, והוא ימשיך להכיר {G('אותך')} בכל משחק.</p>
               <p className="big-coins">+🪙 {s.coins}</p>
               <button className="btn btn-yellow btn-lg" onClick={() => begin('journey')}>⛏️ למסע הראשון</button>
             </>
@@ -310,7 +339,7 @@ export function Mines({ onExit }: { onExit: () => void }) {
     const done = phase === 'solved' || phase === 'revealed';
     const progress = session.mode === 'placement' ? session.placement!.answered : session.count;
     return (
-      <div className="screen mines">
+      <div className={`screen mines world-${config.id}`}>
         <div className="mine-top">
           <button className="btn btn-ghost btn-sm" onClick={() => { setSession(null); setItem(null); }}>✕ יציאה</button>
           <div className="carts" aria-label={`תרגיל ${progress + 1} מתוך ${session.total}`}>
@@ -329,6 +358,7 @@ export function Mines({ onExit }: { onExit: () => void }) {
             {session.mode === 'placement' && <span className="tag">🗺️ מסע היכרות</span>}
             <button className="icon-btn" onClick={() => speak(item.speech)} aria-label="הקראה">🔈</button>
           </div>
+          {item.passage && <div className="passage">{item.passage}</div>}
           <p className="q-prompt">{promptText}</p>
           {picture && <p className="q-picture">{picture}</p>}
           {item.expr && !picture && (
@@ -347,8 +377,8 @@ export function Mines({ onExit }: { onExit: () => void }) {
           {item.choices && (
             <div className="choices">
               {item.choices.map((c) => (
-                <button key={c} disabled={done}
-                  className={`choice ${value === c ? 'on' : ''} ${done && c === item.correctChoice ? 'right' : ''}`}
+                <button key={c} disabled={done || wrongChoices.includes(c)}
+                  className={`choice ${value === c ? 'on' : ''} ${done && c === item.correctChoice ? 'right' : ''} ${wrongChoices.includes(c) ? 'wrong' : ''}`}
                   onClick={() => { sfx.tap(); setValue(c); }}>{c}</button>
               ))}
             </div>
@@ -356,7 +386,7 @@ export function Mines({ onExit }: { onExit: () => void }) {
 
           {feedback && <div className={`feedback ${phase}`}>{feedback}</div>}
           {phase === 'revealed' && session.mode !== 'placement' && (
-            <div className="explain"><b>ככה פותרים:</b> <span dir="ltr">{item.explain}</span><br />{item.hints[2].text}</div>
+            <div className="explain"><b>ככה פותרים:</b> <span dir={item.expr ? 'ltr' : undefined}>{item.explain}</span>{item.hints[2].text !== item.explain && !item.explain.includes(item.hints[2].text) && <><br />{item.hints[2].text}</>}</div>
           )}
 
           {hints > 0 && !done && (
@@ -394,7 +424,7 @@ export function Mines({ onExit }: { onExit: () => void }) {
                 </div>
               )}
               <div className="row">
-                {item.choices && <button className="btn btn-pink btn-lg" disabled={!value} onClick={submit}>✓ {G('בדוק')}</button>}
+                {item.choices && <button className="btn btn-pink btn-lg" disabled={!value} onClick={submit}>✓ {G('בד{וק|קי}')}</button>}
                 {session.mode !== 'placement' && hints < 3 && (
                   <button className="btn btn-ghost" onClick={() => { sfx.tap(); setHints((h) => h + 1); }}>💡 רמז {hints > 0 ? `(${hints}/3)` : ''}</button>
                 )}
@@ -411,23 +441,24 @@ export function Mines({ onExit }: { onExit: () => void }) {
   // ---------- lobby ----------
   const floors: Grade[] = [2, 3];
   return (
-    <div className="screen mines">
+    <div className={`screen mines world-${config.id}`}>
       <div className="mine-top">
         <button className="btn btn-ghost btn-sm" onClick={onExit}>🏝️ חזרה לאי</button>
-        <h2 className="mine-title">⛏️ מכרות המספרים</h2>
+        <h2 className="mine-title">{config.emoji} {config.title}</h2>
         <span className="coins">🪙 {p.coins}</span>
       </div>
 
       <div className="card lobby-hero">
-        {!p.placementDone ? (
+        {needsPlacement ? (
           <>
-            <h3>{G('ברוך הבא')} למכרות, {p.nickname}!</h3>
+            <h3>{G('ברו{ך|כה} ה{בא|באה}')} ל{config.title}, {p.nickname}!</h3>
             <p>{G('לפני שיורדים למכרה, מסע קצר של 6 תרגילים כדי שנדע מאיפה להתחיל. אין פה ציון, פשוט עונים הכי טוב שאפשר.')}</p>
             <button className="btn btn-yellow btn-lg" onClick={() => begin('placement')}>🗺️ מסע היכרות</button>
           </>
         ) : (
           <>
-            <h3>{journeyDoneToday ? G('המסע של היום הושלם! אפשר להמשיך לחפור אם בא לך.') : 'המסע היומי מחכה: 8 תרגילים, בערך 10 דקות.'}</h3>
+            <p className="muted-inv">{config.intro}</p>
+            <h3>{journeyDoneToday ? G('המסע של היום כאן הושלם! אפשר להמשיך אם בא לך.') : 'המסע היומי מחכה: 8 שאלות, בערך 10 דקות.'}</h3>
             <button className="btn btn-yellow btn-lg" onClick={() => begin('journey')}>⛏️ {journeyDoneToday ? 'עוד מסע' : 'למסע של היום'}</button>
             <WeekDots playedDays={p.playedDays} />
           </>
@@ -436,14 +467,14 @@ export function Mines({ onExit }: { onExit: () => void }) {
 
       {floors.map((grade) => (
         <div key={grade} className="floor">
-          <h3>קומת כיתה {grade === 2 ? "ב'" : "ג'"}</h3>
+          <h3>כיתה {grade === 2 ? "ב'" : "ג'"}</h3>
           <div className="tunnels">
-            {NODES.filter((n) => n.grade === grade).map((n) => {
+            {NODES.filter((n) => n.grade === grade && n.subject === config.subject).map((n) => {
               const st = statuses[n.id];
               const sk = p.skills[n.id];
               const level = sk ? expected(sk.theta, n.tierDifficulty[1]) : 0;
               return (
-                <button key={n.id} className={`tunnel st-${st}`} disabled={st === 'locked' || !p.placementDone}
+                <button key={n.id} className={`tunnel st-${st}`} disabled={st === 'locked' || needsPlacement}
                   onClick={() => begin('practice', n.id)} title={n.title}>
                   <span className="t-icon">{STATUS_UI[st].icon}</span>
                   <span className="t-name">{n.title}</span>
@@ -455,7 +486,7 @@ export function Mines({ onExit }: { onExit: () => void }) {
           </div>
         </div>
       ))}
-      <p className="muted small center">מנהרה נפתחת כשיודעים את מה שבא לפניה. 💎 = {G('שולט{|ת}')}, ואחרי כמה ימים המנהרה תחזור לחזרה קצרה כדי שהידע יישאר.</p>
+      <p className="muted small center">{config.topicWord} נפתח כשיודעים את מה שבא לפניו. {config.masteredIcon} = {G('שולט{|ת}')}, ואחרי כמה ימים הנושא יחזור לחזרה קצרה כדי שהידע יישאר.</p>
     </div>
   );
 }

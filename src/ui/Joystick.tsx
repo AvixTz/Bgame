@@ -1,43 +1,63 @@
-import { useRef, useState } from 'react';
-import { input } from '../world/controls';
+import { useEffect, useRef, useState } from 'react';
+import { input, releaseJoystick, setJoystick } from '../world/controls';
 
-/** On-screen joystick for touch devices. Writes to the shared input vector. */
+const R = 48;
+
+/**
+ * Floating on-screen joystick: the stick centers where the thumb lands inside the touch zone, and it
+ * stays mounted for the whole world session so a drag can never be orphaned.
+ */
 export function Joystick() {
-  const base = useRef<HTMLDivElement>(null);
+  const zone = useRef<HTMLDivElement>(null);
+  const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
-  const active = useRef<number | null>(null);
-  const R = 44;
 
-  const move = (clientX: number, clientY: number) => {
-    const el = base.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    let dx = clientX - (rect.left + rect.width / 2);
-    let dy = clientY - (rect.top + rect.height / 2);
+  useEffect(() => () => releaseJoystick(), []);
+
+  const toLocal = (clientX: number, clientY: number) => {
+    const rect = zone.current!.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  };
+
+  const update = (o: { x: number; y: number }, clientX: number, clientY: number, pointerId: number) => {
+    const p = toLocal(clientX, clientY);
+    let dx = p.x - o.x, dy = p.y - o.y;
     const d = Math.hypot(dx, dy);
     if (d > R) { dx = (dx / d) * R; dy = (dy / d) * R; }
     setKnob({ x: dx, y: dy });
-    input.x = dx / R;
-    input.z = dy / R;
+    setJoystick(dx / R, dy / R, pointerId);
   };
+
   const end = () => {
-    active.current = null;
+    releaseJoystick();
+    setOrigin(null);
     setKnob({ x: 0, y: 0 });
-    input.x = 0;
-    input.z = 0;
   };
 
   return (
     <div
-      ref={base}
-      className="joystick"
-      onPointerDown={(e) => { active.current = e.pointerId; (e.target as HTMLElement).setPointerCapture(e.pointerId); move(e.clientX, e.clientY); }}
-      onPointerMove={(e) => { if (active.current === e.pointerId) move(e.clientX, e.clientY); }}
-      onPointerUp={end}
+      ref={zone}
+      className="joy-zone"
+      data-testid="joystick"
+      onPointerDown={(e) => {
+        if (input.joy.active) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const o = toLocal(e.clientX, e.clientY);
+        setOrigin(o);
+        update(o, e.clientX, e.clientY, e.pointerId);
+      }}
+      onPointerMove={(e) => { if (origin && e.pointerId === input.joy.pointerId) update(origin, e.clientX, e.clientY, e.pointerId); }}
+      onPointerUp={(e) => { if (e.pointerId === input.joy.pointerId) end(); }}
       onPointerCancel={end}
-      aria-label="ג'ויסטיק תנועה"
+      onLostPointerCapture={end}
+      aria-label="ג'ויסטיק תנועה: גררו כדי ללכת"
     >
-      <div className="joystick-knob" style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
+      <div
+        className={`joystick ${origin ? 'on' : ''}`}
+        style={origin ? { left: origin.x - 60, top: origin.y - 60 } : undefined}
+      >
+        <div className="joystick-knob" style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
+      </div>
     </div>
   );
 }

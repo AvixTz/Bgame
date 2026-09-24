@@ -1,5 +1,5 @@
 export type Grade = 2 | 3;
-export type Subject = 'math';
+export type Subject = 'math' | 'language' | 'science';
 
 export type StrategyId =
   | 'decompose'
@@ -7,7 +7,12 @@ export type StrategyId =
   | 'pattern'
   | 'estimate'
   | 'known_fact'
-  | 'draw';
+  | 'draw'
+  | 'eliminate'
+  | 'look_back'
+  | 'think_ahead'
+  | 'spot_threat'
+  | 'work_backwards';
 
 export type MistakeType =
   | 'forgot_carry'
@@ -20,6 +25,7 @@ export type MistakeType =
   | 'skip_count_slip'
   | 'swapped_digits'
   | 'remainder_too_big'
+  | 'misconception'
   | 'other';
 
 export interface CurriculumNode {
@@ -29,11 +35,11 @@ export interface CurriculumNode {
   title: string;
   /** Short name shown on the tunnel sign in the mine. */
   short: string;
-  strand: 'number' | 'add_sub' | 'mult_div' | 'word';
+  strand: string;
   prerequisites: string[];
   /** Difficulty (logit scale) of tier 1..3. */
   tierDifficulty: [number, number, number];
-  curriculumVersion: 'new-2023' | '2006';
+  curriculumVersion: string;
 }
 
 export interface Hint {
@@ -47,6 +53,8 @@ export interface Item {
   tier: 1 | 2 | 3;
   /** Text displayed to the child. Math expressions go in `expr` so they render LTR. */
   prompt: string;
+  /** Reading passage shown above the question (reading comprehension). */
+  passage?: string;
   expr?: string;
   /** Text read aloud by TTS. */
   speech: string;
@@ -54,6 +62,8 @@ export interface Item {
   /** When present the child picks from these instead of typing. Values are display strings. */
   choices?: string[];
   correctChoice?: string;
+  /** Specific feedback for a wrong choice (explains the misconception behind it). */
+  choiceFeedback?: Record<string, string>;
   strategies: StrategyId[];
   hints: [Hint, Hint, Hint];
   /** Worked explanation shown after the item. */

@@ -3,6 +3,15 @@ import { useApp } from '../core/store';
 import { attemptsFor } from '../data/db';
 import { buildReport, type ParentReport } from '../brain/insights';
 import type { NodeStatus } from '../brain/model';
+import { NODE_BY_ID } from '../brain/curriculum';
+import { SCENARIOS, SKILLS } from '../minigames/village/scenarios';
+
+const SUBJECTS = [
+  { id: 'math', name: 'חשבון · מכרות המספרים', icon: '⛏️' },
+  { id: 'language', name: 'לשון · ספריית המילים', icon: '📚' },
+  { id: 'science', name: 'מדע · מעבדת הטבע', icon: '🔬' },
+] as const;
+const ARENA_NAMES: Record<string, string> = { ttt: 'איקס עיגול', c4: 'ארבע בשורה', hanoi: 'מגדלי האנוי' };
 
 const STATUS_TEXT: Record<NodeStatus, string> = {
   locked: 'עוד לא נפתח',
@@ -53,6 +62,10 @@ export function Parent() {
 
   if (!player) return null;
   const back = () => go('world');
+  const villageSkills = [...new Set(Object.entries(player.village ?? {}).flatMap(([id, choices]) => {
+    const sc = SCENARIOS.find((x) => x.id === id);
+    return sc ? choices.map((c) => sc.choices[Number(c)]?.skill).filter((x): x is string => !!x) : [];
+  }))];
 
   return (
     <div className="screen parent">
@@ -106,24 +119,52 @@ export function Parent() {
             </div>
           </div>
 
-          <div className="card">
-            <h3>📚 מפת הנושאים (חשבון)</h3>
-            <table className="nodes">
-              <thead><tr><th>כיתה</th><th>נושא</th><th>מצב</th><th>רמה</th></tr></thead>
-              <tbody>
-                {report.nodes.map((n) => (
-                  <tr key={n.nodeId} className={`st-${n.status}`}>
-                    <td>{n.grade === 2 ? "ב'" : "ג'"}</td>
-                    <td>{n.title}</td>
-                    <td>{STATUS_TEXT[n.status]}</td>
-                    <td>{n.attempts ? <span className="bar"><i style={{ width: `${Math.round(n.level * 100)}%` }} /></span> : '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {SUBJECTS.map((sub) => (
+            <div className="card" key={sub.id}>
+              <h3>{sub.icon} {sub.name}</h3>
+              <div className="table-wrap">
+                <table className="nodes">
+                  <thead><tr><th>כיתה</th><th>נושא</th><th>מצב</th><th>רמה</th></tr></thead>
+                  <tbody>
+                    {report.nodes.filter((n) => NODE_BY_ID[n.nodeId].subject === sub.id).map((n) => (
+                      <tr key={n.nodeId} className={`st-${n.status}`}>
+                        <td>{n.grade === 2 ? "ב'" : "ג'"}</td>
+                        <td>{n.title}</td>
+                        <td>{STATUS_TEXT[n.status]}</td>
+                        <td>{n.attempts ? <span className="bar"><i style={{ width: `${Math.round(n.level * 100)}%` }} /></span> : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+
+          <div className="grid2">
+            <div className="card">
+              <h3>♟️ ארנה החשיבה</h3>
+              {player.arena && Object.keys(player.arena).length ? (
+                <ul>
+                  {Object.entries(player.arena).map(([id, a]) => (
+                    <li key={id}>{ARENA_NAMES[id] ?? id}: רמה {a.level} מתוך 3 · {a.wins} ניצחונות, {a.draws} תיקו, {a.losses} הפסדים{a.best ? ` · שיא: ${a.best} מהלכים` : ''}</li>
+                  ))}
+                </ul>
+              ) : <p className="muted">עוד לא שיחקו בארנה.</p>}
+              <p className="muted small">המשחק רושם כשהילד מזהה איום וחוסם אותו, או מפספס מהלך מנצח. זה נכנס לפס "לזהות איום" ו"לחשוב צעד קדימה" למעלה.</p>
+            </div>
+            <div className="card">
+              <h3>🤝 כפר החברים</h3>
+              {villageSkills.length ? (
+                <>
+                  <p>כלים חברתיים שהילד בחר בהם לפחות פעם אחת:</p>
+                  <div className="strats">{villageSkills.map((sk) => <span key={sk} className="strat">{SKILLS[sk]}</span>)}</div>
+                </>
+              ) : <p className="muted">עוד לא ביקרו בכפר.</p>}
+              <p className="muted small">בכפר אין ציון. אנחנו לא מדרגים ילדים בערכים. הרשימה מראה רק אילו כלים הילד כבר הכיר, כדי שיהיה לכם על מה לדבר.</p>
+            </div>
           </div>
 
-          <p className="privacy">🔒 כל הנתונים נשמרים רק במכשיר הזה. זו גרסה ניסיונית. הנושאים מבוססים על תוכנית הלימודים של משרד החינוך ועדיין לא עברו אישור של מורה.</p>
+          <p className="privacy">🔒 כל הנתונים נשמרים רק במכשיר הזה. זו גרסה ניסיונית. הנושאים מבוססים על תוכניות הלימודים של משרד החינוך (חשבון, חינוך לשוני, מדע וטכנולוגיה, כישורי חיים) ועדיין לא עברו אישור של מורה.</p>
         </>
       )}
     </div>

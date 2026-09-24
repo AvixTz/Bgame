@@ -3,7 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Html, Outlines, Sky } from '@react-three/drei';
 import { Vector3, type Group, type Mesh } from 'three';
 import { Avatar } from './Avatar';
-import { input, keyVector } from './controls';
+import { moveVector } from './controls';
 import { useApp, type WorldId } from '../core/store';
 import { PORTALS, portalPos, type PortalDef } from './portals';
 import { makeRng } from '../core/rng';
@@ -173,11 +173,11 @@ function Player({ color, hat, start }: { color: string; hat: string; start: Vect
     const tp = (window as unknown as { __teleport?: [number, number] }).__teleport;
     if (tp) { g.position.set(tp[0], 0, tp[1]); (window as unknown as { __teleport?: unknown }).__teleport = undefined; }
     dt = Math.min(dt, 0.05);
-    const [kx, kz] = keyVector();
-    let x = kx + input.x, z = kz + input.z;
-    const len = Math.hypot(x, z);
-    if (len > 1) { x /= len; z /= len; }
-    vel.current.lerp(tmp.set(x * SPEED, 0, z * SPEED), 1 - Math.exp(-dt * 12));
+    const [x, z] = moveVector();
+    const moving = x !== 0 || z !== 0;
+    // Accelerate smoothly, but stop quickly when input ends so the avatar never drifts on its own.
+    vel.current.lerp(tmp.set(x * SPEED, 0, z * SPEED), 1 - Math.exp(-dt * (moving ? 12 : 20)));
+    if (!moving && vel.current.lengthSq() < 0.01) vel.current.set(0, 0, 0);
     const next = g.position.clone().addScaledVector(vel.current, dt);
 
     // Keep on the island and out of trees / tree of thinking / portals.
@@ -224,6 +224,8 @@ function Player({ color, hat, start }: { color: string; hat: string; start: Vect
 
 /** Last known player position, so returning from a world puts the child back at the portal. */
 export const playerPos = new Vector3(0, 0, 6);
+// Read-only hook for automated playtests (movement/drift checks).
+(window as unknown as { __bgamePos?: Vector3 }).__bgamePos = playerPos;
 
 export function WorldCanvas({ color, hat, mastered, collectibles, active }: { color: string; hat: string; mastered: number; collectibles: string[]; active: boolean }) {
   const start = useMemo(() => playerPos.clone(), []);

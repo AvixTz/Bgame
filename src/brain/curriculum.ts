@@ -5,7 +5,7 @@ import type { CurriculumNode, MistakeType, StrategyId } from './types';
  * Based on the Ministry of Education new primary math program (grade ב from תשפ"ו, grade ג from תשפ"ז)
  * and the 2006 program (multiplication-table mastery in grade ג). Needs review by a teacher.
  */
-export const NODES: CurriculumNode[] = [
+export const MATH_NODES: CurriculumNode[] = [
   {
     id: 'b_place', subject: 'math', grade: 2, strand: 'number',
     title: 'עשרות ויחידות', short: 'עשרות ויחידות',
@@ -73,6 +73,11 @@ export const NODES: CurriculumNode[] = [
   },
 ];
 
+import { LANGUAGE_NODES } from './content/language';
+import { SCIENCE_NODES } from './content/science';
+
+export const NODES: CurriculumNode[] = [...MATH_NODES, ...LANGUAGE_NODES, ...SCIENCE_NODES];
+
 export const NODE_BY_ID: Record<string, CurriculumNode> = Object.fromEntries(NODES.map((n) => [n.id, n]));
 
 export const STRATEGIES: Record<StrategyId, { name: string; icon: string; tip: string }> = {
@@ -82,6 +87,11 @@ export const STRATEGIES: Record<StrategyId, { name: string; icon: string; tip: s
   estimate: { name: 'להעריך קודם', icon: '🎯', tip: 'לפני שמחשבים שואלים: בערך כמה זה יוצא?' },
   known_fact: { name: 'להשתמש במה שאני יודע', icon: '💡', tip: 'אם 5×7=35 אז 6×7 זה עוד 7' },
   draw: { name: 'לצייר את הבעיה', icon: '✏️', tip: 'מציירים קבוצות, קווים או עיגולים כדי לראות את הבעיה' },
+  eliminate: { name: 'לפסול תשובות', icon: '❌', tip: 'מוחקים קודם את מה שבטוח לא נכון, ובוחרים מבין מה שנשאר' },
+  look_back: { name: 'לחזור לטקסט', icon: '📖', tip: 'מחפשים בטקסט את המשפט שמוכיח את התשובה' },
+  think_ahead: { name: 'לחשוב צעד קדימה', icon: '🔮', tip: 'לפני שמשחקים שואלים: מה היריב יעשה אחרי המהלך שלי?' },
+  spot_threat: { name: 'לזהות איום', icon: '🛡️', tip: 'בודקים אם ליריב יש שורה שכמעט נסגרת, וחוסמים אותה' },
+  work_backwards: { name: 'לעבוד מהסוף להתחלה', icon: '⏪', tip: 'מתחילים מהמטרה ושואלים: מה צריך לקרות רגע לפני?' },
 };
 
 /** Feedback for the child (kid) and the insight shown to the parent. */
@@ -125,6 +135,10 @@ export const MISTAKES: Record<MistakeType, { kid: string; parent: string }> = {
   remainder_too_big: {
     kid: 'השארית תמיד קטנה מהמספר שמחלקים בו. אפשר להכניס עוד קבוצה אחת.',
     parent: 'משאיר שארית גדולה מהמחלק',
+  },
+  misconception: {
+    kid: 'זו טעות שהרבה ילדים עושים. בו{א|אי} נבין למה.',
+    parent: 'תפיסה שגויה נפוצה',
   },
   other: {
     kid: 'לא נורא, טעויות הן חלק מהלמידה. בו{א|אי} נראה ביחד איך פותרים.',

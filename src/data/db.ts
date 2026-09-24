@@ -20,7 +20,12 @@ export interface PlayerDoc {
   playedDays: string[];
   journeysCompleted: number;
   lastJourneyDay?: string;
+  journeyDays?: Record<string, string>;
+  arena?: Record<string, ArenaStat>;
+  village?: Record<string, string[]>;
 }
+
+export interface ArenaStat { level: number; wins: number; losses: number; draws: number; lossStreak: number; winStreak: number; best?: number }
 
 class BgameDB extends Dexie {
   players!: Table<PlayerDoc, string>;

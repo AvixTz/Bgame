@@ -1,5 +1,5 @@
 import { NODES, NODE_BY_ID } from './curriculum';
-import type { Grade, Item, MistakeType, SkillState, StrategyId, StrategyState } from './types';
+import type { Grade, Item, MistakeType, SkillState, StrategyId, StrategyState, Subject } from './types';
 import type { Rng } from '../core/rng';
 
 export const DAY = 24 * 60 * 60 * 1000;
@@ -142,10 +142,11 @@ export interface Pick { nodeId: string; tier: 1 | 2 | 3; reason: 'review' | 'foc
  */
 export function recommend(
   skills: Record<string, SkillState>,
-  opts: { now: number; grade: Grade; sessionRecent: boolean[]; rng: Rng; avoidNode?: string; allowedGrades?: Grade[] },
+  opts: { now: number; grade: Grade; sessionRecent: boolean[]; rng: Rng; avoidNode?: string; allowedGrades?: Grade[]; subject?: Subject },
 ): Pick {
   const grades = opts.allowedGrades ?? [2, 3];
-  const candidates = NODES.filter((n) => grades.includes(n.grade));
+  const subject = opts.subject ?? 'math';
+  const candidates = NODES.filter((n) => grades.includes(n.grade) && n.subject === subject);
   const target = isStruggling(opts.sessionRecent) ? TARGET_P_STRUGGLING : TARGET_P;
   const get = (id: string) => skills[id] ?? newSkill(id, priorTheta(NODE_BY_ID[id].grade, opts.grade));
 
@@ -231,7 +232,8 @@ export function seedFromPlacement(
     n: 3, mastered: true, masteredAt: now, reviewStage: 0, nextReviewAt: now + reviewInDays * DAY,
   });
 
-  for (const node of NODES) {
+  const mathNodes = NODES.filter((n) => n.subject === 'math');
+  for (const node of mathNodes) {
     const idx = PLACEMENT_ANCHORS.findIndex((a) => a.nodeId === node.id);
     if (failed.has(node.id)) {
       skills[node.id] = newSkill(node.id, node.tierDifficulty[0] - 0.3);
@@ -244,7 +246,7 @@ export function seedFromPlacement(
     }
   }
   // Non-anchor nodes of a lower grade whose prerequisites are all provisionally known are known too.
-  for (const node of NODES) {
+  for (const node of mathNodes) {
     if (PLACEMENT_ANCHORS.some((a) => a.nodeId === node.id) || node.grade >= grade) continue;
     if (node.prerequisites.every((pre) => skills[pre]?.mastered)) skills[node.id] = provisional(node.id, 2);
   }

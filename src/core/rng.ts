@@ -24,7 +24,17 @@ export function shuffle<T>(rng: Rng, arr: T[]): T[] {
   return a;
 }
 
-/** Hebrew gendered text: "בד{וק|קי} שוב" -> masculine / feminine form. */
 export type Gender = 'm' | 'f';
+const TO_FINAL: Record<string, string> = { כ: 'ך', מ: 'ם', נ: 'ן', פ: 'ף', צ: 'ץ' };
+const FROM_FINAL: Record<string, string> = { ך: 'כ', ם: 'מ', ן: 'נ', ף: 'פ', ץ: 'צ' };
+
+/**
+ * Hebrew gendered text: "בד{וק|קי} שוב" -> masculine / feminine form.
+ * After substitution, letters are normalised to their final/regular forms, so "מזמינ{|ה}" gives
+ * "מזמין" / "מזמינה" and "מרים{|ה}" gives "מרים" / "מרימה".
+ */
 export const g = (text: string, gender: Gender) =>
-  text.replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => (gender === 'f' ? f : m));
+  text
+    .replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => (gender === 'f' ? f : m))
+    .replace(/[כמנפצ](?![\u05D0-\u05EA\-־'"״׳])/g, (c) => TO_FINAL[c])
+    .replace(/[ךםןףץ](?=[\u05D0-\u05EA])/g, (c) => FROM_FINAL[c]);

@@ -45,7 +45,7 @@ export function Hud({ onEnter }: { onEnter: () => void }) {
 
       {firstVisit && !portal && (
         <div className="coach">
-          {g('הזז{|י} את הדמות עם החצים או עם הג\'ויסטיק, ול{ך|כי} אל ⛏️ מכרות המספרים', player.gender)}
+          {g('הזז{|י} את הדמות עם החצים או עם הג\'ויסטיק, ובח{ר|רי} עולם. ⛏️ מכרות המספרים מחכים לך!', player.gender)}
         </div>
       )}
 

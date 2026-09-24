@@ -1,9 +1,11 @@
 import { NODE_BY_ID } from './curriculum';
 import type { Hint, Item, MistakeType, StrategyId } from './types';
 import { pick, randInt, shuffle, type Rng } from '../core/rng';
+import { LANGUAGE_GENERATORS } from './content/language';
+import { SCIENCE_GENERATORS } from './content/science';
 
-type Tier = 1 | 2 | 3;
-type Draft = Omit<Item, 'id' | 'nodeId' | 'tier' | 'difficulty'> & { key: string };
+export type Tier = 1 | 2 | 3;
+export type Draft = Omit<Item, 'id' | 'nodeId' | 'tier' | 'difficulty'> & { key: string };
 
 const hints = (a: string, b: string, c: string): [Hint, Hint, Hint] => [
   { level: 1, text: a },
@@ -422,6 +424,8 @@ const GENERATORS: Record<string, (rng: Rng, tier: Tier) => Draft> = {
   g_div: divDraft,
   g_div_rem: divRem,
   g_word: word,
+  ...LANGUAGE_GENERATORS,
+  ...SCIENCE_GENERATORS,
 };
 
 export function generateItem(nodeId: string, tier: Tier, rng: Rng): Item {
@@ -434,6 +438,9 @@ export function generateItem(nodeId: string, tier: Tier, rng: Rng): Item {
 
 /** Classify a wrong numeric answer into a mistake pattern the parent report can use. */
 export function classifyMistake(item: Item, given: string): MistakeType {
+  if (item.choices && item.nodeId !== 'g_div_rem') {
+    return item.choiceFeedback?.[given] ? 'misconception' : 'other';
+  }
   if (item.choices) {
     const m = given.match(/שארית (\d+)/);
     const divisor = Number(item.expr?.split(':')[1]);

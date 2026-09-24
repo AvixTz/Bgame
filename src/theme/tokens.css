@@ -1,0 +1,51 @@
+/*
+ * Design tokens - the ONLY place colors, fonts, radii and shadows are defined.
+ * A future design system replaces this file; components read tokens and never hard-code colors.
+ */
+:root {
+  --ink: #111014;
+  --paper: #FFF3D6;
+  --paper-2: #FFE7A8;
+  --cream: #FFFBF0;
+  --muted: #5b5560;
+  --line: #111014;
+  --c1: #FF3D7F; --c1-d: #D81B60;
+  --c2: #FFC02E; --c2-d: #E09B00;
+  --c3: #3D5AFE; --c3-d: #2A3EC4;
+  --c4: #00C896; --c4-d: #009B74;
+  --c6: #8B5CF6; --c6-d: #6A3FD8;
+  --mine: #2B2118;
+  --mine-2: #3B2E22;
+  --shadow: 6px 6px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --radius: 18px;
+  --card-bg: var(--cream);
+  --text: var(--ink);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1d1a22;
+    --paper-2: #2a2530;
+    --cream: #26222d;
+    --card-bg: #26222d;
+    --text: #f6efe0;
+    --muted: #b9b0c4;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1d1a22; --paper-2: #2a2530; --cream: #26222d; --card-bg: #26222d; --text: #f6efe0; --muted: #b9b0c4;
+  color-scheme: dark;
+}
+
+
+:root {
+  --font-display: 'Suez One', 'Rubik', serif;
+  --font-body: 'Rubik', system-ui, sans-serif;
+  --world-mines: #3B2E22;
+  --world-library: #4A2B5C;
+  --world-lab: #1E4D4A;
+  --world-village: #2E4A2A;
+  --world-arena: #2B2F5E;
+}

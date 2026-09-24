@@ -205,5 +205,13 @@ describe('insights and economy', () => {
   it('gendered text helper', () => {
     expect(g('בד{וק|קי} שוב', 'm')).toBe('בדוק שוב');
     expect(g('בד{וק|קי} שוב', 'f')).toBe('בדקי שוב');
+    // final letters are fixed after substitution
+    expect(g('מזמינ{|ה} אותה', 'm')).toBe('מזמין אותה');
+    expect(g('מזמינ{|ה} אותה', 'f')).toBe('מזמינה אותה');
+    expect(g('מרים{|ה} יד', 'f')).toBe('מרימה יד');
+    expect(g('הולכ{|ת}.', 'm')).toBe('הולך.');
+    expect(g('ראשונ{|ה}', 'm')).toBe('ראשון');
+    expect(g('שמח, כמו תמיד', 'm')).toBe('שמח, כמו תמיד');
+    expect(g('קטן מ-10', 'm')).toBe('קטן מ-10');
   });
 });
