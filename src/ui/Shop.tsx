@@ -1,4 +1,5 @@
 import { useApp } from '../core/store';
+import { CoinPill } from './Hud';
 import { COLLECTIBLES, SHOP } from '../economy/economy';
 import { sfx } from '../core/audio';
 
@@ -25,8 +26,8 @@ export function Shop() {
   return (
     <div className="modal-back" onClick={() => setShopOpen(false)}>
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="חנות הדמות">
-        <h2>🛍️ חנות הדמות</h2>
-        <p className="muted">יש לך 🪙 {player.coins}</p>
+        <h2>חנות הדמות</h2>
+        <p className="muted">יש לך <CoinPill value={player.coins} /></p>
         {(['color', 'hat'] as const).map((kind) => (
           <div key={kind}>
             <h3>{kind === 'color' ? 'צבע' : 'כובעים'}</h3>
@@ -38,7 +39,7 @@ export function Shop() {
                   <button key={s.id} className={`shop-item ${worn ? 'on' : ''}`} onClick={() => act(s.id)}>
                     {kind === 'color' ? <span className="dot big" style={{ background: s.value }} /> : <span className="hat-emoji">{({ none: '🙂', cap: '🧢', crown: '👑', miner: '⛑️', wizard: '🧙' } as Record<string, string>)[s.value]}</span>}
                     <span>{s.name}</span>
-                    <small>{worn ? 'עליי ✓' : owned ? 'ללבוש' : `🪙 ${s.price}`}</small>
+                    <small>{worn ? 'עליי ✓' : owned ? 'ללבוש' : `${s.price} מטבעות`}</small>
                   </button>
                 );
               })}

@@ -10,7 +10,11 @@ interface AppState {
   nearPortal: WorldId | null;
   shopOpen: boolean;
   toast: string | null;
+  /** Color of the portal wipe transition while it plays. */
+  wipe: string | null;
   go: (s: Screen) => void;
+  /** Go to a screen behind a circular portal wipe in the given color. */
+  travel: (s: Screen, color: string) => void;
   setPlayer: (p: PlayerDoc | null) => void;
   updatePlayer: (fn: (p: PlayerDoc) => PlayerDoc) => void;
   setNearPortal: (w: WorldId | null) => void;
@@ -26,7 +30,16 @@ export const useApp = create<AppState>((set, get) => ({
   nearPortal: null,
   shopOpen: false,
   toast: null,
+  wipe: null,
   go: (screen) => set({ screen }),
+  travel: (screen, color) => {
+    if (get().wipe) return;
+    const reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { set({ screen }); return; }
+    set({ wipe: color });
+    setTimeout(() => set({ screen }), 330);
+    setTimeout(() => set({ wipe: null }), 780);
+  },
   setPlayer: (player) => set({ player }),
   updatePlayer: (fn) => {
     const p = get().player;

@@ -27,6 +27,8 @@ export const sfx = {
   coin: () => { tone(1320, 0.08, 'square', 0, 0.05); tone(1760, 0.12, 'square', 0.07, 0.05); },
   win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, 'triangle', i * 0.12)),
   tap: () => tone(440, 0.05, 'sine', 0, 0.05),
+  portal: () => [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, 'sine', i * 0.05, 0.07)),
+  pop: () => { tone(880, 0.06, 'triangle', 0, 0.06); tone(1320, 0.08, 'triangle', 0.04, 0.05); },
 };
 
 /** Hebrew text-to-speech. Uses a he-IL voice when the device has one. */

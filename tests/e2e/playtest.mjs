@@ -11,6 +11,8 @@ const errors = [];
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 const pos = () => page.evaluate(() => [window.__bgamePos.x, window.__bgamePos.z]);
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+// Wait for rendered frames, not milliseconds: a software-rendered headless browser may draw ~2 fps.
+const frames = (n) => page.evaluate((n) => new Promise((res) => { let k = 0; const f = () => (++k >= n ? res() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
 const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png` });
 const results = {};
 
@@ -27,63 +29,63 @@ const cx = zb.x + zb.width / 2, cy = zb.y + zb.height / 2;
 let p0 = await pos();
 await page.mouse.move(cx, cy); await page.mouse.down();
 await page.mouse.move(cx, cy - 45, { steps: 5 });
-await page.waitForTimeout(1500);
+await frames(14);
 let p1 = await pos();
 results.joystickMoves = dist(p0, p1).toFixed(2);
 await shot('01-joystick-drag');
 await page.mouse.up();
-await page.waitForTimeout(400);
+await frames(6);
 let p2 = await pos();
-await page.waitForTimeout(2000);
+await frames(20);
 let p3 = await pos();
 results.driftAfterRelease = dist(p2, p3).toFixed(3);
 
 // release outside the joystick zone (finger slides off)
 await page.mouse.move(cx, cy); await page.mouse.down();
 await page.mouse.move(cx + 40, cy - 30, { steps: 4 });
-await page.waitForTimeout(600);
+await frames(8);
 await page.mouse.move(800, 200, { steps: 4 });
 await page.mouse.up();
-await page.waitForTimeout(400);
-p2 = await pos(); await page.waitForTimeout(1500); p3 = await pos();
+await frames(6);
+p2 = await pos(); await frames(20); p3 = await pos();
 results.driftAfterReleaseOutside = dist(p2, p3).toFixed(3);
 
 // drag while walking into a portal zone, then release (old bug: joystick unmounted mid-drag)
 await page.evaluate(() => { const a = Math.PI - 0.6; window.__teleport = [Math.sin(a) * 11.2, Math.cos(a) * 11.2]; });
-await page.waitForTimeout(800);
+await frames(6);
 await page.mouse.move(cx, cy); await page.mouse.down();
 await page.mouse.move(cx, cy - 40, { steps: 4 });
-await page.waitForTimeout(900);
+await frames(10);
 await shot('02-drag-into-portal');
 await page.mouse.up();
-await page.waitForTimeout(400);
-p2 = await pos(); await page.waitForTimeout(1500); p3 = await pos();
+await frames(6);
+p2 = await pos(); await frames(20); p3 = await pos();
 results.driftAfterPortalDrag = dist(p2, p3).toFixed(3);
 
 // keyboard
 p0 = await pos();
-await page.keyboard.down('ArrowDown'); await page.waitForTimeout(1000); await page.keyboard.up('ArrowDown');
-await page.waitForTimeout(400); p2 = await pos(); await page.waitForTimeout(1500); p3 = await pos();
+await page.keyboard.down('ArrowDown'); await frames(12); await page.keyboard.up('ArrowDown');
+await frames(6); p2 = await pos(); await frames(20); p3 = await pos();
 results.keyboardMoves = dist(p0, p2).toFixed(2);
 results.driftAfterKeyUp = dist(p2, p3).toFixed(3);
 console.log('MOVEMENT', JSON.stringify(results));
 
 const enter = async (angle, label) => {
   await page.evaluate((a) => { window.__teleport = [Math.sin(a) * 10.8, Math.cos(a) * 10.8]; }, angle);
-  await page.waitForTimeout(1200);
+  await frames(5);
   const btn = await page.$(`text=כניסה ל${label}`);
   if (!btn) { console.log('NO PORTAL BUTTON', label); await shot('portal-missing-' + label); return false; }
-  await btn.click(); await page.waitForTimeout(500); return true;
+  await btn.click(); await page.waitForTimeout(1000); return true;
 };
 const answerChoices = async (n, prefix) => {
   for (let i = 0; i < n * 4 + 4; i++) {
     if (await page.$('text=המסע של היום הושלם')) break;
-    const cont = await page.$('text=המשך ←');
+    const cont = await page.$('button:has-text("המשך")');
     if (cont) { await cont.click(); await page.waitForTimeout(150); continue; }
     const ch = await page.$$('.choice:not([disabled])');
     if (!ch.length) { await page.waitForTimeout(200); continue; }
     if (i === 1) await shot(prefix + '-question');
-    await ch[0].click(); await page.click('button:has-text("✓ בד")'); await page.waitForTimeout(200);
+    await ch[0].click(); await page.click('button.btn-pink:has-text("בד")'); await page.waitForTimeout(200);
     if (i === 1) await shot(prefix + '-feedback');
   }
   await page.waitForTimeout(300);
@@ -114,24 +116,24 @@ if (await enter(0.35, 'ארנה החשיבה')) {
     for (const c of cells) { if (!(await c.textContent()).trim()) { await c.click(); break; } }
     await page.waitForTimeout(700);
   }
-  await page.click('text=💡 רמז').catch(() => {});
+  await page.click('button:has-text("רמז")').catch(() => {});
   await shot('08-ttt');
-  await page.click('text=← לזירה');
+  await page.click('button:has-text("לזירה")');
   await page.click('text=ארבע בשורה'); await page.waitForTimeout(300);
   for (let k = 0; k < 4; k++) { await page.click(`.c4-cell >> nth=${38 - k % 2}`); await page.waitForTimeout(700); }
-  await page.click('text=💡 רמז').catch(() => {});
+  await page.click('button:has-text("רמז")').catch(() => {});
   await shot('09-c4');
-  await page.click('text=← לזירה');
+  await page.click('button:has-text("לזירה")');
   await page.click('text=מגדלי האנוי'); await page.waitForTimeout(300);
   for (let k = 0; k < 7; k++) {
-    await page.click('text=💡 רמז');
+    await page.click('button:has-text("רמז")');
     const from = await page.$('.peg.hint-from'); const to = await page.$('.peg.hint-to');
     if (!from || !to) break;
     await from.click(); await to.click(); await page.waitForTimeout(100);
   }
   await page.waitForTimeout(300);
   await shot('10-hanoi');
-  await page.click('text=← לזירה'); await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
+  await page.click('button:has-text("לזירה")'); await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
 }
 // village
 if (await enter(-1.75, 'כפר החברים')) {

@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { Dumbbell, Handshake, Lightbulb, RotateCcw, Swords, Trophy } from 'lucide-react';
+import { CoinPill } from '../../ui/Hud';
+import { celebrate } from '../../ui/fx';
 import { useApp } from '../../core/store';
 import type { ArenaStat } from '../../data/db';
 import { newStrategy, updateStrategy } from '../../brain/model';
@@ -57,9 +60,9 @@ export function Arena({ onExit }: { onExit: () => void }) {
   return (
     <div className="screen mines world-arena">
       <div className="mine-top">
-        <button className="btn btn-ghost btn-sm" onClick={game ? () => setGame(null) : onExit}>{game ? '← לזירה' : '🏝️ חזרה לאי'}</button>
-        <h2 className="mine-title">♟️ ארנה החשיבה</h2>
-        <span className="coins">🪙 {p.coins}</span>
+        <button className="btn btn-ghost btn-sm" onClick={game ? () => setGame(null) : onExit}>{game ? 'לזירה' : 'חזרה לאי'}</button>
+        <h2 className="mine-title"><Swords className="icon" /> ארנה החשיבה</h2>
+        <CoinPill value={p.coins} />
       </div>
       {!game && (
         <div className="arena-list">
@@ -87,9 +90,9 @@ export function Arena({ onExit }: { onExit: () => void }) {
 function EndBar({ result, coins, onAgain, text }: { result: Result; coins: number; onAgain: () => void; text: string }) {
   return (
     <div className={`feedback ${result === 'win' ? 'solved' : result === 'draw' ? 'retry' : 'revealed'}`}>
-      <b>{result === 'win' ? '🏆 ניצחון!' : result === 'draw' ? '🤝 תיקו!' : '💪 הפעם המחשב ניצח.'}</b> {text}
-      {coins > 0 && <> +🪙 {coins}</>}
-      <div className="row"><button className="btn btn-yellow" onClick={onAgain}>עוד משחק</button></div>
+      {result === 'win' ? <Trophy className="icon" /> : result === 'draw' ? <Handshake className="icon" /> : <Dumbbell className="icon" />}
+      <span><b>{result === 'win' ? 'ניצחון!' : result === 'draw' ? 'תיקו!' : 'הפעם המחשב ניצח.'}</b> {text}{coins > 0 && <> <b>+{coins} מטבעות</b></>}</span>
+      <div className="row" style={{ width: '100%' }}><button className="btn btn-yellow" onClick={onAgain}><RotateCcw className="icon" /> עוד משחק</button></div>
     </div>
   );
 }
@@ -123,7 +126,7 @@ function TicTacToe({ level, onEnd }: { level: number; onEnd: (r: Result) => numb
       ? G('ליריב היו שניים בשורה ולא חסמת. בפעם הבאה: לפני כל מהלך, בד{וק|קי} את השורות שלו. 🛡️')
       : result === 'draw' ? 'אף אחד לא נפל בפח. זה משחק של שני חושבים טובים.'
       : result === 'win' ? G('ראית את ההזדמנות וניצלת אותה.') : 'נסו לחשוב איפה המחשב יכול לסגור שורה.';
-    if (result === 'win') sfx.win(); else if (result === 'loss') sfx.wrong();
+    if (result === 'win') { sfx.win(); celebrate(); } else if (result === 'loss') sfx.wrong();
     setEnd({ result, coins: onEnd(result), text });
     return true;
   };
@@ -153,8 +156,8 @@ function TicTacToe({ level, onEnd }: { level: number; onEnd: (r: Result) => numb
     const threat = tttWinningMove(b, 2);
     if (own >= 0) { setHint(own); setCoach(G('🔮 יש לך מהלך מנצח! חפש{|י} שורה שבה חסר לך רק סימן אחד.')); }
     else if (threat >= 0) { setHint(threat); setCoach('🛡️ זהירות! ליריב יש שניים בשורה. איפה חוסמים?'); }
-    else if (b[4] === 0) { setHint(4); setCoach('💡 המרכז שייך לארבע שורות. זה המקום החזק ביותר.'); }
-    else { setCoach('💡 פינות שייכות לשלוש שורות. נסו לתפוס פינה.'); }
+    else if (b[4] === 0) { setHint(4); setCoach('המרכז שייך לארבע שורות. זה המקום החזק ביותר.'); }
+    else { setCoach('פינות שייכות לשלוש שורות. נסו לתפוס פינה.'); }
   };
 
   return (
@@ -167,9 +170,9 @@ function TicTacToe({ level, onEnd }: { level: number; onEnd: (r: Result) => numb
           </button>
         ))}
       </div>
-      {coach && <p className="coach-line">{coach}</p>}
+      {coach && <p className="coach-line"><Lightbulb className="icon" /> <span>{coach}</span></p>}
       {end ? <EndBar {...end} onAgain={() => setRound((r) => r + 1)} /> : (
-        <div className="row"><button className="btn btn-ghost" onClick={giveHint} disabled={busy}>💡 רמז</button></div>
+        <div className="row"><button className="btn btn-ghost" onClick={giveHint} disabled={busy}><Lightbulb className="icon" /> רמז</button></div>
       )}
     </div>
   );
@@ -202,7 +205,7 @@ function ConnectFour({ level, onEnd }: { level: number; onEnd: (r: Result) => nu
     const text = result === 'loss' && missedBlock.current
       ? G('למחשב היו שלוש בשורה ולא חסמת. לפני כל מהלך: בד{וק|קי} אם הוא יכול לנצח בתור הבא. 🛡️')
       : result === 'win' ? G('חיברת ארבע! תכננת קדימה.') : result === 'draw' ? 'הלוח התמלא. משחק צמוד!' : 'חשבו איפה המחשב בנה שורה ארוכה.';
-    if (result === 'win') sfx.win(); else if (result === 'loss') sfx.wrong();
+    if (result === 'win') { sfx.win(); celebrate(); } else if (result === 'loss') sfx.wrong();
     setEnd({ result, coins: onEnd(result), text });
     return true;
   };
@@ -234,7 +237,7 @@ function ConnectFour({ level, onEnd }: { level: number; onEnd: (r: Result) => nu
     const threat = c4WinningCol(b, 2);
     if (own >= 0) { setHintCol(own); setCoach('🔮 יש מהלך מנצח! חפשו שלוש בשורה עם מקום פנוי.'); }
     else if (threat >= 0) { setHintCol(threat); setCoach('🛡️ למחשב יש שלוש בשורה! חוסמים עכשיו.'); }
-    else { setHintCol(3); setCoach('💡 העמודה האמצעית שייכת להכי הרבה שורות. היא חזקה.'); }
+    else { setHintCol(3); setCoach('העמודה האמצעית שייכת להכי הרבה שורות. היא חזקה.'); }
   };
 
   return (
@@ -247,9 +250,9 @@ function ConnectFour({ level, onEnd }: { level: number; onEnd: (r: Result) => nu
           </button>
         )))}
       </div>
-      {coach && <p className="coach-line">{coach}</p>}
+      {coach && <p className="coach-line"><Lightbulb className="icon" /> <span>{coach}</span></p>}
       {end ? <EndBar {...end} onAgain={() => setRound((r) => r + 1)} /> : (
-        <div className="row"><button className="btn btn-ghost" onClick={giveHint} disabled={busy}>💡 רמז</button></div>
+        <div className="row"><button className="btn btn-ghost" onClick={giveHint} disabled={busy}><Lightbulb className="icon" /> רמז</button></div>
       )}
     </div>
   );
@@ -284,7 +287,7 @@ function Hanoi({ level, best, onEnd }: { level: number; best?: number; onEnd: (r
     if (hanoiSolved(next, n)) {
       const optimal = m === hanoiOptimal(n);
       log('work_backwards', optimal && hintsUsed.current === 0);
-      sfx.win();
+      sfx.win(); if (optimal) celebrate();
       const text = optimal
         ? G(`מספר המהלכים הכי קטן שאפשר: ${m}! חשבת מהסוף להתחלה.`)
         : `הצלחה! מספר המהלכים: ${m}. הכי מעט אפשרי: ${hanoiOptimal(n)}. רוצים לנסות שוב?`;
@@ -320,11 +323,11 @@ function Hanoi({ level, best, onEnd }: { level: number; best?: number; onEnd: (r
         ))}
       </div>
       <p className="muted small center">לוחצים על עמוד כדי להרים את הדיסק העליון, ועל עמוד אחר כדי להניח אותו. היעד: העמוד הימני.</p>
-      {coach && <p className="coach-line">{coach}</p>}
+      {coach && <p className="coach-line"><Lightbulb className="icon" /> <span>{coach}</span></p>}
       {end ? <EndBar {...end} onAgain={() => setRound((r) => r + 1)} /> : (
         <div className="row">
-          <button className="btn btn-ghost" onClick={giveHint}>💡 רמז</button>
-          <button className="btn btn-ghost" onClick={() => setRound((r) => r + 1)}>↺ מההתחלה</button>
+          <button className="btn btn-ghost" onClick={giveHint}><Lightbulb className="icon" /> רמז</button>
+          <button className="btn btn-ghost" onClick={() => setRound((r) => r + 1)}><RotateCcw className="icon" /> מההתחלה</button>
         </div>
       )}
     </div>

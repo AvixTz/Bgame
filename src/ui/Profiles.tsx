@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { deletePlayer, isPersistent, listPlayers, newPlayer, savePlayer, type PlayerDoc } from '../data/db';
 import { useApp } from '../core/store';
 import { SHOP } from '../economy/economy';
@@ -44,9 +45,9 @@ export function Profiles() {
             {players.map((p) => (
               <div key={p.id} className="profile-item">
                 <button className="profile-btn" onClick={() => enter(p)}>
-                  <span className="dot" style={{ background: p.color }} />
+                  <span className="avatar-bubble" style={{ background: p.color }} />
                   <b>{p.nickname}</b>
-                  <small>כיתה {p.grade === 2 ? "ב'" : "ג'"} · 🪙 {p.coins}</small>
+                  <small>כיתה {p.grade === 2 ? "ב'" : "ג'"} <span className="coin-ico" /> {p.coins}</small>
                 </button>
                 {confirmDel === p.id ? (
                   <div className="confirm-del">
@@ -55,7 +56,7 @@ export function Profiles() {
                     <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDel(null)}>ביטול</button>
                   </div>
                 ) : (
-                  <button className="icon-btn" aria-label={`מחיקת ${p.nickname}`} onClick={() => setConfirmDel(p.id)}>🗑️</button>
+                  <button className="icon-btn" aria-label={`מחיקת ${p.nickname}`} onClick={() => setConfirmDel(p.id)}><Trash2 className="icon" /></button>
                 )}
               </div>
             ))}

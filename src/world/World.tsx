@@ -1,112 +1,60 @@
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Html, Outlines, Sky } from '@react-three/drei';
-import { Vector3, type Group, type Mesh } from 'three';
+import { Html, Sky } from '@react-three/drei';
+import { TreeDeciduous } from 'lucide-react';
+import { Vector3, type Group, type Mesh, type MeshStandardMaterial } from 'three';
 import { Avatar } from './Avatar';
 import { moveVector } from './controls';
 import { useApp, type WorldId } from '../core/store';
-import { PORTALS, portalPos, type PortalDef } from './portals';
+import { PORTALS, portalPos } from './portals';
+import { ISLAND_R, groundHeight } from './terrain';
+import { obstacles, setObstacles } from './obstacles';
+import { Butterflies, Clouds, Island, Paths, Sea, Vegetation } from './Nature';
+import { Landmarks } from './Landmarks';
 import { makeRng } from '../core/rng';
 import { COLLECTIBLES } from '../economy/economy';
 
-const INK = '#111014';
-const ISLAND_R = 21;
-
-
-// Static obstacles: [x, z, radius]
-const obstacles: [number, number, number][] = [];
-
-function Island() {
-  return (
-    <group>
-      <mesh position={[0, -60, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[400, 48]} />
-        <meshToonMaterial color="#3DB8F5" />
-      </mesh>
-      <mesh position={[0, -0.9, 0]} receiveShadow>
-        <cylinderGeometry args={[ISLAND_R + 2.5, ISLAND_R + 4, 1.6, 48]} />
-        <meshToonMaterial color="#FFE7A8" />
-      </mesh>
-      <mesh position={[0, -0.25, 0]} receiveShadow>
-        <cylinderGeometry args={[ISLAND_R, ISLAND_R + 1.2, 0.5, 48]} />
-        <meshToonMaterial color="#7ED957" />
-        <Outlines thickness={0.08} color={INK} />
-      </mesh>
-      <mesh position={[0, -1.3, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[ISLAND_R + 4, 120, 64]} />
-        <meshToonMaterial color="#5CC8FF" transparent opacity={0.85} />
-      </mesh>
-      {/* paths from the center to each portal */}
-      {PORTALS.map((p) => (
-        <mesh key={p.id} position={[Math.sin(p.angle) * 7.5, 0.01, Math.cos(p.angle) * 7.5]} rotation={[-Math.PI / 2, 0, -p.angle]}>
-          <planeGeometry args={[2.2, 11]} />
-          <meshToonMaterial color="#F4D58D" />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function Trees() {
-  const trees = useMemo(() => {
-    const rng = makeRng(42);
-    const out: { x: number; z: number; s: number; c: string }[] = [];
-    while (out.length < 26) {
-      const a = rng() * Math.PI * 2;
-      const r = 8.5 + rng() * (ISLAND_R - 10);
-      const x = Math.sin(a) * r, z = Math.cos(a) * r;
-      const nearPortal = PORTALS.some((p) => {
-        const pp = portalPos(p);
-        return Math.hypot(pp.x - x, pp.z - z) < 4.5 || Math.abs(Math.atan2(Math.sin(a - p.angle), Math.cos(a - p.angle))) < 0.3;
-      });
-      if (nearPortal || (z > 2 && Math.abs(x) < 7)) continue;
-      out.push({ x, z, s: 0.8 + rng() * 0.7, c: ['#2FA84F', '#45C065', '#1E8E3E'][Math.floor(rng() * 3)] });
-    }
-    obstacles.length = 0;
-    out.forEach((t) => obstacles.push([t.x, t.z, 0.6 * t.s]));
-    return out;
-  }, []);
-  return (
-    <group>
-      {trees.map((t, i) => (
-        <group key={i} position={[t.x, 0, t.z]} scale={t.s}>
-          <mesh position={[0, 0.6, 0]} castShadow><cylinderGeometry args={[0.18, 0.25, 1.2, 8]} /><meshToonMaterial color="#8B5A2B" /></mesh>
-          <mesh position={[0, 1.8, 0]} castShadow><coneGeometry args={[1, 2, 8]} /><meshToonMaterial color={t.c} /><Outlines thickness={0.04} color={INK} /></mesh>
-        </group>
-      ))}
-    </group>
-  );
-}
-
-/** The Thinking Tree grows with every mastered topic - progress that can never be lost. */
+/** The Thinking Tree grows and blossoms with every mastered topic - progress that can never be lost. */
 function ThinkingTree({ mastered, collectibles }: { mastered: number; collectibles: string[] }) {
-  const grow = 1 + Math.min(mastered, 13) * 0.07;
-  const flowers = useMemo(() => {
+  const grow = 1 + Math.min(mastered, 20) * 0.04;
+  const blossoms = useMemo(() => {
     const rng = makeRng(7);
-    return Array.from({ length: 13 }, () => {
-      const a = rng() * Math.PI * 2, y = 3 + rng() * 2.2, r = 1.2 + rng() * 0.9;
+    return Array.from({ length: 20 }, () => {
+      const a = rng() * Math.PI * 2, y = 3.3 + rng() * 2.2, r = 1.5 + rng() * 0.8;
       return [Math.sin(a) * r, y, Math.cos(a) * r] as [number, number, number];
     });
   }, []);
-  const colors = ['#FF3D7F', '#FFC02E', '#FFFFFF', '#FF8A00', '#8B5CF6'];
+  const colors = ['#FF4F8B', '#FFB930', '#FFFFFF', '#FF7A59', '#8A5CF6'];
+  const crown = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    if (crown.current) crown.current.rotation.z = Math.sin(clock.elapsedTime * 0.6) * 0.02;
+  });
+  useLayoutEffect(() => { setObstacles('tree', [[0, 0, 1.4 * grow]]); }, [grow]);
   return (
     <group scale={grow}>
-      <mesh position={[0, 1.4, 0]} castShadow><cylinderGeometry args={[0.45, 0.7, 2.8, 10]} /><meshToonMaterial color="#9B6B3F" /><Outlines thickness={0.05} color={INK} /></mesh>
-      <mesh position={[0, 3.9, 0]} castShadow><sphereGeometry args={[2.1, 20, 16]} /><meshToonMaterial color="#35C46B" /><Outlines thickness={0.06} color={INK} /></mesh>
-      <mesh position={[1.2, 3.4, 0.6]} castShadow><sphereGeometry args={[1.2, 16, 12]} /><meshToonMaterial color="#45D07A" /></mesh>
-      <mesh position={[-1.1, 3.5, -0.4]} castShadow><sphereGeometry args={[1.3, 16, 12]} /><meshToonMaterial color="#2DB35F" /></mesh>
-      {flowers.slice(0, mastered).map((p, i) => (
-        <mesh key={i} position={p}><sphereGeometry args={[0.22, 10, 8]} /><meshToonMaterial color={colors[i % colors.length]} emissive={colors[i % colors.length]} emissiveIntensity={0.25} /></mesh>
+      <mesh position={[0, 1.5, 0]} castShadow><cylinderGeometry args={[0.42, 0.75, 3, 10]} /><meshStandardMaterial color="#9A6B45" roughness={0.9} /></mesh>
+      {[0, 2.1, 4.2].map((a) => (
+        <mesh key={a} position={[Math.sin(a) * 0.7, 0.18, Math.cos(a) * 0.7]} rotation={[0, a, 0.9]} castShadow><cylinderGeometry args={[0.1, 0.22, 1, 6]} /><meshStandardMaterial color="#8A5C39" roughness={0.9} /></mesh>
       ))}
-      <Html position={[0, 6.6, 0]} center distanceFactor={14} zIndexRange={[5, 0]}>
-        <div className="sign sign-tree">🌳 עץ החשיבה</div>
+      <group ref={crown} position={[0, 0, 0]}>
+        {[[0, 4.2, 0, 2.2], [1.4, 3.6, 0.6, 1.3], [-1.3, 3.7, -0.4, 1.4], [0.3, 3.5, -1.3, 1.2], [-0.4, 5.3, 0.3, 1.3]].map(([x, y, z, s], i) => (
+          <mesh key={i} position={[x, y, z]} scale={s} castShadow>
+            <icosahedronGeometry args={[1, 2]} /><meshStandardMaterial color={['#3FBF63', '#55CC6E', '#34B058', '#62D477', '#4BC66A'][i]} roughness={0.75} flatShading />
+          </mesh>
+        ))}
+        {blossoms.slice(0, mastered).map((p, i) => (
+          <mesh key={i} position={p}><icosahedronGeometry args={[0.26, 1]} /><meshStandardMaterial color={colors[i % colors.length]} emissive={colors[i % colors.length]} emissiveIntensity={0.45} /></mesh>
+        ))}
+      </group>
+      <Html position={[0, 7.4, 0]} center distanceFactor={14} zIndexRange={[5, 0]} pointerEvents="none">
+        <div className="sign sign-tree"><TreeDeciduous className="icon" /> עץ החשיבה</div>
       </Html>
       {collectibles.map((id, i) => {
         const c = COLLECTIBLES.find((x) => x.id === id);
         if (!c) return null;
         const a = (i / Math.max(collectibles.length, 1)) * Math.PI * 2;
         return (
-          <Html key={id} position={[Math.sin(a) * 3, 0.6, Math.cos(a) * 3]} center distanceFactor={12} zIndexRange={[4, 0]}>
+          <Html key={id} position={[Math.sin(a) * 2.8, 0.7, Math.cos(a) * 2.8]} center distanceFactor={12} zIndexRange={[4, 0]} pointerEvents="none">
             <div className="collectible" title={c.name}>{c.emoji}</div>
           </Html>
         );
@@ -115,49 +63,47 @@ function ThinkingTree({ mastered, collectibles }: { mastered: number; collectibl
   );
 }
 
-function Portal({ def }: { def: PortalDef }) {
-  const ring = useRef<Mesh>(null);
-  const pos = portalPos(def);
-  useFrame((_, dt) => { if (ring.current && def.open) ring.current.rotation.z += dt * 0.8; });
-  return (
-    <group position={pos} rotation={[0, def.angle + Math.PI, 0]}>
-      {def.id === 'mines' ? (
-        <group position={[0, 0, -1.2]}>
-          <mesh position={[0, 1.1, -0.6]} castShadow><dodecahedronGeometry args={[2.8, 0]} /><meshToonMaterial color="#8C7B6B" /><Outlines thickness={0.06} color={INK} /></mesh>
-          <mesh position={[0, 1.2, 1.25]}><boxGeometry args={[2, 2.4, 0.2]} /><meshBasicMaterial color="#1a1208" /></mesh>
-          {[-1.1, 1.1].map((x) => (
-            <mesh key={x} position={[x, 1.25, 1.4]} castShadow><boxGeometry args={[0.28, 2.6, 0.28]} /><meshToonMaterial color="#9B6B3F" /><Outlines thickness={0.03} color={INK} /></mesh>
-          ))}
-          <mesh position={[0, 2.6, 1.4]} castShadow><boxGeometry args={[2.6, 0.3, 0.32]} /><meshToonMaterial color="#9B6B3F" /><Outlines thickness={0.03} color={INK} /></mesh>
-          <pointLight position={[0, 1.2, 1.8]} color="#FFC02E" intensity={6} distance={6} />
-          {[-0.4, 0.4].map((x) => (
-            <mesh key={x} position={[x, 0.03, 2.6]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.1, 3]} /><meshBasicMaterial color="#555" /></mesh>
-          ))}
-        </group>
-      ) : (
-        <group>
-          {[-1.3, 1.3].map((x) => (
-            <mesh key={x} position={[x, 1.3, 0]} castShadow><boxGeometry args={[0.6, 2.6, 0.6]} /><meshToonMaterial color="#D9D2C5" /><Outlines thickness={0.04} color={INK} /></mesh>
-          ))}
-          <mesh position={[0, 2.8, 0]} castShadow><boxGeometry args={[3.4, 0.5, 0.7]} /><meshToonMaterial color="#D9D2C5" /><Outlines thickness={0.04} color={INK} /></mesh>
-          <mesh ref={ring} position={[0, 1.35, 0]}>
-            <circleGeometry args={[1.0, 32]} />
-            <meshToonMaterial color={def.color} transparent opacity={0.35} />
-          </mesh>
-        </group>
-      )}
-      <Html position={[0, def.id === 'mines' ? 4.9 : 3.8, 0]} center distanceFactor={17} zIndexRange={[5, 0]}>
-        <div className="sign" style={{ ['--sign' as string]: def.color }}>
-          {def.emoji} {def.name}{!def.open && <span className="soon"> 🔒 בקרוב</span>}
-        </div>
-      </Html>
-    </group>
-  );
+/** Small dust puffs behind the avatar's feet while walking. */
+const DUST = 10;
+function useDust() {
+  const refs = useRef<(Mesh | null)[]>([]);
+  const life = useRef(Array.from({ length: DUST }, () => 0));
+  const next = useRef(0);
+  const timer = useRef(0);
+  const spawn = (x: number, y: number, z: number) => {
+    const i = next.current++ % DUST;
+    const m = refs.current[i];
+    if (!m) return;
+    m.position.set(x + (Math.random() - 0.5) * 0.3, y + 0.1, z + (Math.random() - 0.5) * 0.3);
+    life.current[i] = 1;
+  };
+  const update = (dt: number, moving: boolean, x: number, y: number, z: number, speed: number) => {
+    timer.current += dt;
+    if (moving && speed > 2 && timer.current > 0.12) { timer.current = 0; spawn(x, y, z); }
+    refs.current.forEach((m, i) => {
+      if (!m) return;
+      const l = (life.current[i] = Math.max(0, life.current[i] - dt * 1.8));
+      m.visible = l > 0;
+      m.scale.setScalar(0.12 + (1 - l) * 0.25);
+      m.position.y += dt * 0.35;
+      (m.material as MeshStandardMaterial).opacity = l * 0.55;
+    });
+  };
+  const nodes = Array.from({ length: DUST }, (_, i) => (
+    <mesh key={i} ref={(el) => { refs.current[i] = el; }} visible={false}>
+      <icosahedronGeometry args={[1, 1]} /><meshStandardMaterial color="#F3E7CC" transparent opacity={0} depthWrite={false} />
+    </mesh>
+  ));
+  return { update, nodes };
 }
 
 const tmp = new Vector3();
 const camTarget = new Vector3();
-const CAM_OFFSET = new Vector3(0, 8.5, 10.5);
+const lookTarget = new Vector3();
+const lookSmooth = new Vector3(0, 1.2, 6);
+const CAM_OFFSET = new Vector3(0, 7.8, 10.2);
+/** Portrait phones: higher and steeper, so trees in front of the camera do not hide the avatar. */
+const CAM_OFFSET_PORTRAIT = new Vector3(0, 14, 10.5);
 const SPEED = 6;
 
 function Player({ color, hat, start }: { color: string; hat: string; start: Vector3 }) {
@@ -165,6 +111,9 @@ function Player({ color, hat, start }: { color: string; hat: string; start: Vect
   const vel = useRef(new Vector3());
   const setNearPortal = useApp((s) => s.setNearPortal);
   const positioned = useRef(false);
+  const walkPhase = useRef(0);
+  const blink = useRef(2);
+  const dust = useDust();
 
   useFrame((state, dt) => {
     const g = ref.current;
@@ -176,24 +125,23 @@ function Player({ color, hat, start }: { color: string; hat: string; start: Vect
     const [x, z] = moveVector();
     const moving = x !== 0 || z !== 0;
     // Accelerate smoothly, but stop quickly when input ends so the avatar never drifts on its own.
-    vel.current.lerp(tmp.set(x * SPEED, 0, z * SPEED), 1 - Math.exp(-dt * (moving ? 12 : 20)));
+    if (moving) vel.current.lerp(tmp.set(x * SPEED, 0, z * SPEED), 1 - Math.exp(-dt * 12));
+    // Released: brake hard on every frame, independent of frame rate, so a slow device never slides.
+    else vel.current.multiplyScalar(Math.min(Math.exp(-dt * 25), 0.35));
     if (!moving && vel.current.lengthSq() < 0.01) vel.current.set(0, 0, 0);
     const next = g.position.clone().addScaledVector(vel.current, dt);
 
-    // Keep on the island and out of trees / tree of thinking / portals.
     const r = Math.hypot(next.x, next.z);
-    if (r > ISLAND_R - 1) next.multiplyScalar((ISLAND_R - 1) / r);
-    const solids: [number, number, number][] = [...obstacles, [0, 0, 1.6]];
-    for (const p of PORTALS) {
-      const pp = portalPos(p);
-      solids.push([pp.x * 1.1, pp.z * 1.1, p.id === 'mines' ? 2.6 : 1.2]);
-    }
-    for (const [ox, oz, or] of solids) {
+    if (r > ISLAND_R - 1) { next.x *= (ISLAND_R - 1) / r; next.z *= (ISLAND_R - 1) / r; }
+    for (const [ox, oz, or] of obstacles) {
       const dx = next.x - ox, dz = next.z - oz;
       const d = Math.hypot(dx, dz);
       const min = or + 0.45;
       if (d < min && d > 0.0001) { next.x = ox + (dx / d) * min; next.z = oz + (dz / d) * min; }
     }
+    // Follow the hills smoothly.
+    const gy = groundHeight(next.x, next.z);
+    next.y = g.position.y + (gy - g.position.y) * Math.min(1, dt * 14);
     g.position.copy(next);
 
     const speed = vel.current.length();
@@ -202,24 +150,50 @@ function Player({ color, hat, start }: { color: string; hat: string; start: Vect
       const dy = Math.atan2(Math.sin(targetYaw - g.rotation.y), Math.cos(targetYaw - g.rotation.y));
       g.rotation.y += dy * Math.min(1, dt * 12);
     }
-    const body = g.getObjectByName('body');
-    if (body) body.position.y = speed > 0.3 ? Math.abs(Math.sin(state.clock.elapsedTime * 12)) * 0.12 : 0;
 
-    // Portrait phones see a narrow slice of the world, so pull the camera back.
+    // Walk cycle: limbs swing with speed, the body bobs, eyes blink now and then.
+    const k = Math.min(1, speed / SPEED);
+    walkPhase.current += dt * (4 + speed * 1.6);
+    const sw = Math.sin(walkPhase.current) * 0.75 * k;
+    const legL = g.getObjectByName('legL'), legR = g.getObjectByName('legR');
+    const armL = g.getObjectByName('armL'), armR = g.getObjectByName('armR');
+    const body = g.getObjectByName('body'), eyes = g.getObjectByName('eyes');
+    if (legL) legL.rotation.x = sw;
+    if (legR) legR.rotation.x = -sw;
+    if (armL) { armL.rotation.x = -sw * 0.9; armL.rotation.z = 0.12 + (1 - k) * Math.sin(state.clock.elapsedTime * 1.6) * 0.05; }
+    if (armR) { armR.rotation.x = sw * 0.9; armR.rotation.z = -0.12; }
+    if (body) {
+      body.position.y = Math.abs(Math.cos(walkPhase.current)) * 0.09 * k + (1 - k) * Math.sin(state.clock.elapsedTime * 2) * 0.02;
+      body.rotation.z = Math.sin(walkPhase.current) * 0.04 * k;
+    }
+    blink.current -= dt;
+    if (eyes) eyes.scale.y = blink.current < 0.12 ? 0.15 : 1;
+    if (blink.current < 0) blink.current = 2 + Math.random() * 3;
+    dust.update(dt, moving, g.position.x, g.position.y, g.position.z, speed);
+
+    // Camera: follow with a little look-ahead; portrait phones see a narrow slice, so pull back.
     const aspect = state.size.width / Math.max(1, state.size.height);
-    camTarget.copy(g.position).addScaledVector(CAM_OFFSET, aspect < 0.8 ? 1.45 : 1);
+    camTarget.copy(g.position).add(aspect < 0.8 ? CAM_OFFSET_PORTRAIT : CAM_OFFSET);
     state.camera.position.lerp(camTarget, 1 - Math.exp(-dt * 4));
-    state.camera.lookAt(g.position.x, g.position.y + 1.2, g.position.z);
+    lookTarget.set(g.position.x + vel.current.x * 0.18, g.position.y + 1.2, g.position.z + vel.current.z * 0.18);
+    lookSmooth.lerp(lookTarget, 1 - Math.exp(-dt * 6));
+    state.camera.lookAt(lookSmooth);
 
     let near: WorldId | null = null;
     for (const p of PORTALS) {
-      if (g.position.distanceTo(portalPos(p)) < 3.6) near = p.id;
+      const pp = portalPos(p);
+      if (Math.hypot(g.position.x - pp.x, g.position.z - pp.z) < 3.6) near = p.id;
     }
     setNearPortal(near);
     playerPos.copy(g.position);
   });
 
-  return <Avatar ref={ref} color={color} hat={hat} />;
+  return (
+    <>
+      <Avatar ref={ref} color={color} hat={hat} />
+      {dust.nodes}
+    </>
+  );
 }
 
 /** Last known player position, so returning from a world puts the child back at the portal. */
@@ -230,16 +204,32 @@ export const playerPos = new Vector3(0, 0, 6);
 export function WorldCanvas({ color, hat, mastered, collectibles, active }: { color: string; hat: string; mastered: number; collectibles: string[]; active: boolean }) {
   const start = useMemo(() => playerPos.clone(), []);
   return (
-    <Canvas frameloop={active ? 'always' : 'never'} shadows dpr={[1, 1.75]} camera={{ position: [0, 9, 17], fov: 50 }} gl={{ antialias: true }}>
-      <Sky sunPosition={[40, 30, 20]} turbidity={3} rayleigh={0.6} />
-      <hemisphereLight args={['#fff6e0', '#7ED957', 0.9]} />
-      <directionalLight position={[15, 25, 10]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]}
-        shadow-camera-left={-26} shadow-camera-right={26} shadow-camera-top={26} shadow-camera-bottom={-26} />
-      <fog attach="fog" args={['#bfe8ff', 45, 110]} />
+    <Canvas
+      frameloop={active ? 'always' : 'never'}
+      shadows
+      dpr={[1, 1.75]}
+      camera={{ position: [0, 9, 17], fov: 48, near: 0.1, far: 400 }}
+      gl={{ antialias: true, powerPreference: 'high-performance' }}
+      onCreated={({ gl }) => { gl.toneMappingExposure = 1.05; }}
+    >
+      <Sky sunPosition={[60, 38, 25]} turbidity={2.2} rayleigh={0.9} mieCoefficient={0.004} mieDirectionalG={0.8} />
+      <fog attach="fog" args={['#CFE9FF', 60, 160]} />
+      <hemisphereLight args={['#DDEEFF', '#6CCB5F', 0.85]} />
+      <ambientLight intensity={0.15} />
+      <directionalLight
+        position={[18, 26, 12]} intensity={2.3} color="#FFF3DC" castShadow
+        shadow-mapSize={[2048, 2048]} shadow-bias={-0.0004} shadow-normalBias={0.03}
+        shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={80}
+      />
+      <directionalLight position={[-16, 10, -20]} intensity={0.5} color="#B8D6FF" />
+      <Sea />
       <Island />
-      <Trees />
+      <Paths />
+      <Vegetation />
+      <Clouds />
+      <Butterflies />
       <ThinkingTree mastered={mastered} collectibles={collectibles} />
-      {PORTALS.map((p) => <Portal key={p.id} def={p} />)}
+      <Landmarks />
       <Player color={color} hat={hat} start={start} />
     </Canvas>
   );

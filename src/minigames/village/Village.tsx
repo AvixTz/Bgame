@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Handshake, Sparkles, Volume2 } from 'lucide-react';
+import { burst } from '../../ui/fx';
 import { useApp } from '../../core/store';
 import { g } from '../../core/rng';
 import { sfx, speak } from '../../core/audio';
@@ -35,12 +37,13 @@ export function Village({ onExit }: { onExit: () => void }) {
     return (
       <div className="screen mines world-village">
         <div className="mine-top">
-          <button className="btn btn-ghost btn-sm" onClick={() => { setSc(null); setPicked([]); setDone(false); }}>← לכפר</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setSc(null); setPicked([]); setDone(false); }}>לכפר</button>
           <h2 className="mine-title">{sc.who} {sc.title}</h2>
           <span />
         </div>
         <div className="card scenario">
-          <p className="situation">{G(sc.situation)} <button className="icon-btn inline" onClick={() => speak(G(sc.situation))} aria-label="הקראה">🔈</button></p>
+          <span className="scene-who" aria-hidden>{sc.who}</span>
+          <p className="situation">{G(sc.situation)} <button className="icon-btn inline" onClick={() => speak(G(sc.situation))} aria-label="הקראה"><Volume2 className="icon" /></button></p>
           {!done && <p className="q-prompt">{G('מה היית עושה?')}</p>}
           {!done && (
             <div className="choices one-col">
@@ -53,18 +56,18 @@ export function Village({ onExit }: { onExit: () => void }) {
             <div className="outcome">
               <span className="feeling">{choice.feeling}</span>
               <p>{G(choice.outcome)}</p>
-              {choice.skill && <p className="skill-found">{G('השתמשת בכלי')}: <b>{SKILLS[choice.skill]}</b></p>}
+              {choice.skill && <p className="skill-found"><Sparkles className="icon" /> {G('השתמשת בכלי')}: <b>{SKILLS[choice.skill]}</b></p>}
             </div>
           )}
           {choice && !done && (
             <div className="row">
               <button className="btn btn-ghost" onClick={() => setPicked((x) => x.slice(0, -1).concat())}>{G('לנסות בחירה אחרת')}</button>
-              <button className="btn btn-yellow" onClick={() => { setDone(true); sfx.correct(); }}>{G('סיימתי')}</button>
+              <button className="btn btn-yellow" onClick={() => { setDone(true); sfx.correct(); burst(); }}>{G('סיימתי')}</button>
             </div>
           )}
           {done && (
             <div className="lookback">
-              <h3>🦉 הינשוף החכם שואל</h3>
+              <h3>הינשוף החכם שואל</h3>
               <p>{G('איזו בחירה הרגישה לך הכי טוב? למה?')}</p>
               <p className="muted">{G('שאלה לשיחה בבית:')} {G(sc.home)}</p>
               <button className="btn btn-pink" onClick={() => { setSc(null); setPicked([]); setDone(false); }}>חזרה לכפר</button>
@@ -78,8 +81,8 @@ export function Village({ onExit }: { onExit: () => void }) {
   return (
     <div className="screen mines world-village">
       <div className="mine-top">
-        <button className="btn btn-ghost btn-sm" onClick={onExit}>🏝️ חזרה לאי</button>
-        <h2 className="mine-title">🤝 כפר החברים</h2>
+        <button className="btn btn-ghost btn-sm" onClick={onExit}>חזרה לאי</button>
+        <h2 className="mine-title"><Handshake className="icon" /> כפר החברים</h2>
         <span />
       </div>
       <div className="card lobby-hero village-hero">

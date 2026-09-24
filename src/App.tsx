@@ -20,13 +20,13 @@ const WorldCanvas = lazy(() => import('./world/World').then((m) => ({ default: m
  * in a mini-game. Returning is instant, the avatar is where it was, and the WebGL context is not rebuilt.
  */
 function WorldScreen({ active }: { active: boolean }) {
-  const { player, go, shopOpen } = useApp();
+  const { player, shopOpen } = useApp();
   const last = useRef(player);
   if (player) last.current = player;
   const enter = () => {
     const st = useApp.getState();
     const portal = PORTALS.find((x) => x.id === st.nearPortal);
-    if (st.screen === 'world' && portal?.open) { sfx.tap(); go(portal.id); }
+    if (st.screen === 'world' && portal?.open) { sfx.portal(); st.travel(portal.id, portal.color); }
   };
   useEffect(() => (active ? bindKeyboard(enter) : resetInput()), [active]);
   const p = last.current;
@@ -45,7 +45,7 @@ function WorldScreen({ active }: { active: boolean }) {
 }
 
 export function App() {
-  const { screen, go, toast, player } = useApp();
+  const { screen, go, toast, player, wipe } = useApp();
   const [worldOpened, setWorldOpened] = useState(false);
   useEffect(() => { if (screen === 'world') setWorldOpened(true); }, [screen]);
   useEffect(() => {
@@ -58,12 +58,13 @@ export function App() {
       {screen === 'profiles' && <Profiles />}
       {worldOpened && <WorldScreen active={screen === 'world' && !!player} />}
       {(screen === 'mines' || screen === 'library' || screen === 'lab') && (
-        <SubjectWorld key={screen} config={WORLDS[screen]} onExit={() => go('world')} />
+        <SubjectWorld key={screen} config={WORLDS[screen]} onExit={() => useApp.getState().travel('world', '#7EC8FF')} />
       )}
-      {screen === 'arena' && <Arena onExit={() => go('world')} />}
-      {screen === 'village' && <Village onExit={() => go('world')} />}
+      {screen === 'arena' && <Arena onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
+      {screen === 'village' && <Village onExit={() => useApp.getState().travel('world', '#7EC8FF')} />}
       {screen === 'parent' && <Parent />}
-      {toast && <div className="toast" role="status">{toast}</div>}
+      {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
+      {wipe && <div className="wipe" style={{ ['--wipe' as string]: wipe }} aria-hidden />}
     </>
   );
 }

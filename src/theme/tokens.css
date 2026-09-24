@@ -1,51 +1,83 @@
 /*
- * Design tokens - the ONLY place colors, fonts, radii and shadows are defined.
- * A future design system replaces this file; components read tokens and never hard-code colors.
+ * Bgame design tokens - "Clay Island".
+ * The ONLY place colors, fonts, radii, shadows and motion are defined. Components read tokens.
+ *
+ * Direction: soft, toy-like clay (chunky rounded shapes, top light, soft double shadows) in a bright
+ * daytime island palette. Deliberately a single bright theme: the 3D world is a sunny island, and a
+ * dark UI over it would fight the scene. Every surface still sets its own background and text color.
  */
 :root {
-  --ink: #111014;
-  --paper: #FFF3D6;
-  --paper-2: #FFE7A8;
-  --cream: #FFFBF0;
-  --muted: #5b5560;
-  --line: #111014;
-  --c1: #FF3D7F; --c1-d: #D81B60;
-  --c2: #FFC02E; --c2-d: #E09B00;
-  --c3: #3D5AFE; --c3-d: #2A3EC4;
-  --c4: #00C896; --c4-d: #009B74;
-  --c6: #8B5CF6; --c6-d: #6A3FD8;
-  --mine: #2B2118;
-  --mine-2: #3B2E22;
-  --shadow: 6px 6px 0 var(--ink);
-  --shadow-sm: 3px 3px 0 var(--ink);
-  --radius: 18px;
-  --card-bg: var(--cream);
+  /* palette */
+  --sky: #EAF4FF;
+  --sky-2: #D6EBFF;
+  --cloud: #FFFFFF;
+  --cream: #FFF8EC;
+  --ink: #1E2A4A;
+  --ink-soft: #56627F;
+  --ink-faint: #8A94AD;
+
+  --ocean: #2E6BFF;   --ocean-d: #1C4ED8;   --ocean-l: #DCE7FF;
+  --sun: #FFB930;     --sun-d: #D98A00;     --sun-l: #FFF0CC;
+  --berry: #FF4F8B;   --berry-d: #D6336C;   --berry-l: #FFE0EB;
+  --mint: #1FC690;    --mint-d: #0E9C6E;    --mint-l: #D5F7EA;
+  --grape: #8A5CF6;   --grape-d: #6B3FE0;   --grape-l: #ECE4FF;
+  --coral: #FF7A59;   --coral-d: #DB5534;   --coral-l: #FFE4DB;
+
+  /* semantic */
+  --bg: var(--sky);
+  --surface: var(--cloud);
+  --surface-2: #F4F8FF;
   --text: var(--ink);
+  --text-soft: var(--ink-soft);
+  --primary: var(--ocean);
+  --primary-d: var(--ocean-d);
+  --success: var(--mint);
+  --success-bg: var(--mint-l);
+  --warn-bg: var(--sun-l);
+  --error-bg: var(--berry-l);
+  --focus: #2E6BFF;
+
+  /* worlds */
+  --world-mines: #8A5A34;   --world-mines-d: #3F2716;
+  --world-library: #7B4BC4; --world-library-d: #35205A;
+  --world-lab: #10958F;     --world-lab-d: #0A3F45;
+  --world-village: #3FA55A; --world-village-d: #1C4A2C;
+  --world-arena: #3E55D6;   --world-arena-d: #1B2463;
+
+  /* type */
+  --font-display: 'Fredoka', 'Rubik', 'Arial Rounded MT Bold', system-ui, sans-serif;
+  --font-body: 'Rubik', system-ui, 'Segoe UI', sans-serif;
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.9375rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.3125rem;
+  --fs-xl: 1.75rem;
+  --fs-2xl: 2.375rem;
+  --fs-hero: clamp(2.75rem, 9vw, 4.5rem);
+
+  /* shape */
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-pill: 999px;
+
+  /* clay depth: soft drop + top highlight + bottom shade */
+  --clay: 0 12px 28px rgba(30, 42, 74, .13), 0 2px 4px rgba(30, 42, 74, .06), inset 0 -5px 0 rgba(30, 42, 74, .06), inset 0 3px 0 rgba(255, 255, 255, .9);
+  --clay-sm: 0 6px 14px rgba(30, 42, 74, .12), inset 0 -3px 0 rgba(30, 42, 74, .07), inset 0 2px 0 rgba(255, 255, 255, .85);
+  --lift: 0 18px 40px rgba(30, 42, 74, .18);
+
+  /* spacing (4pt rhythm) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+
+  /* motion */
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --dur-fast: 140ms;
+  --dur: 240ms;
+  --dur-slow: 420ms;
+
+  /* layers */
+  --z-hud: 20; --z-joy: 15; --z-modal: 50; --z-toast: 60; --z-wipe: 80;
+
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #1d1a22;
-    --paper-2: #2a2530;
-    --cream: #26222d;
-    --card-bg: #26222d;
-    --text: #f6efe0;
-    --muted: #b9b0c4;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --paper: #1d1a22; --paper-2: #2a2530; --cream: #26222d; --card-bg: #26222d; --text: #f6efe0; --muted: #b9b0c4;
-  color-scheme: dark;
-}
-
-
-:root {
-  --font-display: 'Suez One', 'Rubik', serif;
-  --font-body: 'Rubik', system-ui, sans-serif;
-  --world-mines: #3B2E22;
-  --world-library: #4A2B5C;
-  --world-lab: #1E4D4A;
-  --world-village: #2E4A2A;
-  --world-arena: #2B2F5E;
 }

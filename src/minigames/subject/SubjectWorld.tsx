@@ -11,7 +11,13 @@ import { COINS, JOURNEY_LENGTH, dayKey, rollSurprise, type Collectible } from '.
 import { addAttempt, type PlayerDoc } from '../../data/db';
 import { g, makeRng, pick } from '../../core/rng';
 import { sfx, speak } from '../../core/audio';
-import { WeekDots } from '../../ui/Hud';
+import { CoinPill, WeekDots } from '../../ui/Hud';
+import { burst, celebrate } from '../../ui/fx';
+import { PORTAL_BY_ID } from '../../world/portals';
+import {
+  ArrowLeft, Check, CircleCheck, Delete, Dumbbell, Gem, Lightbulb, Lock, Map, Repeat, Sparkles, Star, TriangleAlert, Volume2,
+  type LucideIcon,
+} from 'lucide-react';
 
 type Mode = 'journey' | 'practice' | 'placement';
 type Phase = 'answer' | 'retry' | 'solved' | 'revealed';
@@ -53,14 +59,20 @@ export const WORLDS: Record<'mines' | 'library' | 'lab', WorldConfig> = {
   lab: { id: 'lab', subject: 'science', title: 'מעבדת הטבע', emoji: '🔬', topicWord: 'ניסוי', learningLabel: 'בניסוי', masteredIcon: '🧪', placement: false, intro: 'כל שולחן במעבדה הוא נושא במדע: חומרים, בעלי חיים, צמחים וחשמל.' },
 };
 
-const statusUi = (c: WorldConfig): Record<NodeStatus, { icon: string; label: string }> => ({
-  locked: { icon: '🔒', label: 'נעול' },
-  new: { icon: '✨', label: 'חדש' },
-  learning: { icon: c.emoji, label: c.learningLabel },
-  struggling: { icon: '💪', label: 'מתאמנים' },
-  mastered: { icon: c.masteredIcon, label: 'נכבש!' },
-  review_due: { icon: '🔁', label: 'לחזרה' },
+const statusUi = (c: WorldConfig): Record<NodeStatus, { icon: LucideIcon; label: string }> => ({
+  locked: { icon: Lock, label: 'נעול' },
+  new: { icon: Sparkles, label: 'חדש' },
+  learning: { icon: PORTAL_BY_ID[c.id as 'mines'].icon, label: c.learningLabel },
+  struggling: { icon: Dumbbell, label: 'מתאמנים' },
+  mastered: { icon: Gem, label: 'נכבש!' },
+  review_due: { icon: Repeat, label: 'לחזרה' },
 });
+
+/** 3 stars ≥ 85% first-try, 2 ≥ 60%, otherwise 1 - finishing always earns a star. */
+const starsFor = (s: { firstTryCorrect: number; total: number }) => {
+  const r = s.firstTryCorrect / Math.max(1, s.total);
+  return r >= 0.85 ? 3 : r >= 0.6 ? 2 : 1;
+};
 
 const PRAISE = [
   (s: string) => `נכון! האסטרטגיה "${s}" עובדת כאן מצוין.`,
@@ -186,6 +198,7 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
 
     if (correct) {
       sfx.correct();
+      burst(0.5, 0.6);
       if (coins) setTimeout(sfx.coin, 250);
       setPhase('solved');
       if (mode === 'placement') setFeedback('נכון! ממשיכים.');
@@ -200,7 +213,7 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
       setFeedback(mode === 'placement' ? G('לא נורא! זה עוזר לנו לדעת מאיפה להתחיל. ממשיכים.') : specific ?? G(MISTAKES[mistake ?? 'other'].kid));
     }
     if (newlyMastered.length) {
-      setTimeout(() => { sfx.win(); showToast(`💎 ${G('שלטת')} ב"${NODE_BY_ID[newlyMastered[0]].title}"! +${COINS.mastery}`); }, 500);
+      setTimeout(() => { sfx.win(); celebrate(); showToast(`💎 ${G('שלטת')} ב"${NODE_BY_ID[newlyMastered[0]].title}"! +${COINS.mastery}`); }, 500);
     }
   };
 
@@ -248,7 +261,7 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
       }
       return pl;
     });
-    if (s.mode !== 'practice') sfx.win();
+    if (s.mode !== 'practice') { sfx.win(); setTimeout(celebrate, 250); }
     setSummary({ ...s, surprise, coins: s.coins + (s.mode === 'practice' ? 0 : COINS.journeyComplete) });
     setSession(null);
     setItem(null);
@@ -298,32 +311,37 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
         <div className="card summary">
           {s.mode === 'placement' ? (
             <>
-              <h2>🗺️ {G('מצאנו את נקודת ההתחלה שלך!')}</h2>
+              <div className="medal"><Map className="icon" /></div>
+              <h2>{G('מצאנו את נקודת ההתחלה שלך!')}</h2>
               <p>המכרה יודע עכשיו מאיפה כדאי להתחיל, והוא ימשיך להכיר {G('אותך')} בכל משחק.</p>
-              <p className="big-coins">+🪙 {s.coins}</p>
-              <button className="btn btn-yellow btn-lg" onClick={() => begin('journey')}>⛏️ למסע הראשון</button>
+              <p className="big-coins"><span className="coin-ico" /><bdi dir="ltr">+{s.coins}</bdi></p>
+              <div className="row"><button className="btn btn-yellow btn-lg" onClick={() => begin('journey')}>למסע הראשון <ArrowLeft className="icon" /></button></div>
             </>
           ) : (
             <>
-              <h2>{s.mode === 'journey' ? '🎉 המסע של היום הושלם!' : '✅ סיום אימון'}</h2>
-              <p className="big-coins">+🪙 {s.coins}</p>
+              <div className="medal"><Star className="icon" /></div>
+              <h2>{s.mode === 'journey' ? 'המסע של היום הושלם!' : 'סיום אימון'}</h2>
+              <div className="stars-row" aria-label={`${starsFor(s)} כוכבים מתוך 3`}>
+                {[0, 1, 2].map((i) => <Star key={i} className={`icon ${i < starsFor(s) ? 'lit' : ''}`} style={{ animationDelay: `${300 + i * 180}ms` }} />)}
+              </div>
+              <p className="big-coins"><span className="coin-ico" /><bdi dir="ltr">+{s.coins}</bdi></p>
               <p>{s.firstTryCorrect} מתוך {s.total} {G('פתרת')} כבר בניסיון הראשון.</p>
               {s.mastered.length > 0 && (
-                <div className="badges">{s.mastered.map((m) => <span key={m} className="badge">💎 {NODE_BY_ID[m].title}</span>)}</div>
+                <div className="badges">{s.mastered.map((m) => <span key={m} className="badge"><Gem className="icon" /> {NODE_BY_ID[m].title}</span>)}</div>
               )}
               {s.surprise && (
                 <div className="surprise">✨ {G('מצאת')} אוצר במכרה: <b>{s.surprise.emoji} {s.surprise.name}</b>! הוא מחכה ליד עץ החשיבה.</div>
               )}
               <div className="lookback">
-                <h3>🔎 מבט לאחור</h3>
+                <h3>מבט לאחור</h3>
                 <p>היום {G('השתמשת')} באסטרטגיות:</p>
                 <div className="strats">{s.strategiesUsed.map((id) => <span key={id} className="strat">{STRATEGIES[id].icon} {STRATEGIES[id].name}</span>)}</div>
                 <p className="muted">{G('איזו מהן עזרה לך הכי הרבה? נס{ה|י} לספר למישהו בבית.')}</p>
               </div>
               {s.mode === 'journey' && <><h3>היעד השבועי</h3><WeekDots playedDays={useApp.getState().player!.playedDays} /></>}
               <div className="row">
-                <button className="btn btn-pink" onClick={onExit}>🏝️ חזרה לאי</button>
-                <button className="btn btn-ghost" onClick={() => setSummary(null)}>⛏️ להמשיך במכרה</button>
+                <button className="btn btn-blue" onClick={onExit}>חזרה לאי</button>
+                <button className="btn btn-ghost" onClick={() => setSummary(null)}>להמשיך כאן</button>
               </div>
             </>
           )}
@@ -344,7 +362,7 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
           <button className="btn btn-ghost btn-sm" onClick={() => { setSession(null); setItem(null); }}>✕ יציאה</button>
           <div className="carts" aria-label={`תרגיל ${progress + 1} מתוך ${session.total}`}>
             {Array.from({ length: session.total }, (_, i) => (
-              <span key={i} className={`cart ${i < progress ? 'full' : ''} ${i === progress ? 'now' : ''}`}>{i < progress ? '💎' : '🛒'}</span>
+              <span key={i} className={`cart ${i < progress ? 'full' : ''} ${i === progress ? 'now' : ''}`} />
             ))}
           </div>
           <span className="coins">🪙 {useApp.getState().player!.coins}</span>
@@ -356,7 +374,7 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
             {reason === 'review' && <span className="tag tag-review">🔁 חזרה: {G('זוכר{|ת}')}?</span>}
             {reason === 'new' && <span className="tag tag-new">✨ נושא חדש</span>}
             {session.mode === 'placement' && <span className="tag">🗺️ מסע היכרות</span>}
-            <button className="icon-btn" onClick={() => speak(item.speech)} aria-label="הקראה">🔈</button>
+            <button className="icon-btn" onClick={() => speak(item.speech)} aria-label="הקראה" title="הקראה"><Volume2 className="icon" /></button>
           </div>
           {item.passage && <div className="passage">{item.passage}</div>}
           <p className="q-prompt">{promptText}</p>
@@ -384,14 +402,19 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
             </div>
           )}
 
-          {feedback && <div className={`feedback ${phase}`}>{feedback}</div>}
+          {feedback && (
+            <div className={`feedback ${phase}`} role="status">
+              {phase === 'solved' ? <CircleCheck className="icon" /> : phase === 'retry' ? <Lightbulb className="icon" /> : <TriangleAlert className="icon" />}
+              <span>{feedback}</span>
+            </div>
+          )}
           {phase === 'revealed' && session.mode !== 'placement' && (
             <div className="explain"><b>ככה פותרים:</b> <span dir={item.expr ? 'ltr' : undefined}>{item.explain}</span>{item.hints[2].text !== item.explain && !item.explain.includes(item.hints[2].text) && <><br />{item.hints[2].text}</>}</div>
           )}
 
           {hints > 0 && !done && (
             <div className="hints">
-              {item.hints.slice(0, hints).map((h) => <p key={h.level}>💡 {h.text}</p>)}
+              {item.hints.slice(0, hints).map((h) => <p key={h.level}><Lightbulb className="icon" /> <span>{h.text}</span></p>)}
             </div>
           )}
 
@@ -418,20 +441,20 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
                   {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((d) => (
                     <button key={d} onClick={() => setValue((v) => (v.length < 4 ? v + d : v))}>{d}</button>
                   ))}
-                  <button className="k-del" onClick={() => setValue((v) => v.slice(0, -1))} aria-label="מחיקה">⌫</button>
+                  <button className="k-del" onClick={() => setValue((v) => v.slice(0, -1))} aria-label="מחיקה"><Delete className="icon" /></button>
                   <button onClick={() => setValue((v) => (v.length < 4 ? v + '0' : v))}>0</button>
-                  <button className="k-ok" onClick={submit} disabled={!value}>✓</button>
+                  <button className="k-ok" onClick={submit} disabled={!value} aria-label={G('בד{וק|קי}')}><Check className="icon" /></button>
                 </div>
               )}
               <div className="row">
-                {item.choices && <button className="btn btn-pink btn-lg" disabled={!value} onClick={submit}>✓ {G('בד{וק|קי}')}</button>}
+                {item.choices && <button className="btn btn-pink btn-lg" disabled={!value} onClick={submit}><Check className="icon" /> {G('בד{וק|קי}')}</button>}
                 {session.mode !== 'placement' && hints < 3 && (
-                  <button className="btn btn-ghost" onClick={() => { sfx.tap(); setHints((h) => h + 1); }}>💡 רמז {hints > 0 ? `(${hints}/3)` : ''}</button>
+                  <button className="btn btn-ghost" onClick={() => { sfx.tap(); setHints((h) => h + 1); }}><Lightbulb className="icon" /> רמז {hints > 0 ? `(${hints}/3)` : ''}</button>
                 )}
               </div>
             </>
           ) : (
-            <button className="btn btn-yellow btn-lg" onClick={cont}>המשך ←</button>
+            <div className="row"><button className="btn btn-yellow btn-lg" onClick={cont} autoFocus>המשך <ArrowLeft className="icon" /></button></div>
           )}
         </div>
       </div>
@@ -443,9 +466,9 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
   return (
     <div className={`screen mines world-${config.id}`}>
       <div className="mine-top">
-        <button className="btn btn-ghost btn-sm" onClick={onExit}>🏝️ חזרה לאי</button>
-        <h2 className="mine-title">{config.emoji} {config.title}</h2>
-        <span className="coins">🪙 {p.coins}</span>
+        <button className="btn btn-ghost btn-sm" onClick={onExit}>חזרה לאי</button>
+        <h2 className="mine-title">{(() => { const I = PORTAL_BY_ID[config.id as 'mines'].icon; return <I className="icon" />; })()} {config.title}</h2>
+        <CoinPill value={p.coins} />
       </div>
 
       <div className="card lobby-hero">
@@ -453,13 +476,13 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
           <>
             <h3>{G('ברו{ך|כה} ה{בא|באה}')} ל{config.title}, {p.nickname}!</h3>
             <p>{G('לפני שיורדים למכרה, מסע קצר של 6 תרגילים כדי שנדע מאיפה להתחיל. אין פה ציון, פשוט עונים הכי טוב שאפשר.')}</p>
-            <button className="btn btn-yellow btn-lg" onClick={() => begin('placement')}>🗺️ מסע היכרות</button>
+            <button className="btn btn-yellow btn-lg" onClick={() => begin('placement')}><Map className="icon" /> מסע היכרות</button>
           </>
         ) : (
           <>
             <p className="muted-inv">{config.intro}</p>
             <h3>{journeyDoneToday ? G('המסע של היום כאן הושלם! אפשר להמשיך אם בא לך.') : 'המסע היומי מחכה: 8 שאלות, בערך 10 דקות.'}</h3>
-            <button className="btn btn-yellow btn-lg" onClick={() => begin('journey')}>⛏️ {journeyDoneToday ? 'עוד מסע' : 'למסע של היום'}</button>
+            <button className="btn btn-yellow btn-lg" onClick={() => begin('journey')}>{journeyDoneToday ? 'עוד מסע' : 'למסע של היום'} <ArrowLeft className="icon" /></button>
             <WeekDots playedDays={p.playedDays} />
           </>
         )}
@@ -476,7 +499,7 @@ export function SubjectWorld({ config, onExit }: { config: WorldConfig; onExit: 
               return (
                 <button key={n.id} className={`tunnel st-${st}`} disabled={st === 'locked' || needsPlacement}
                   onClick={() => begin('practice', n.id)} title={n.title}>
-                  <span className="t-icon">{STATUS_UI[st].icon}</span>
+                  <span className="t-icon">{(() => { const I = STATUS_UI[st].icon; return <I className="icon" />; })()}</span>
                   <span className="t-name">{n.title}</span>
                   <span className="t-state">{STATUS_UI[st].label}</span>
                   {st !== 'locked' && st !== 'new' && <span className="t-bar"><i style={{ width: `${Math.round(level * 100)}%` }} /></span>}

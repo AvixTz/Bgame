@@ -39,7 +39,7 @@ function Gate({ onOpen, onBack }: { onOpen: () => void; onBack: () => void }) {
   useEffect(() => () => clearInterval(timer.current), []);
   return (
     <div className="card gate">
-      <h2>👨‍👩‍👧 אזור הורים</h2>
+      <h2>אזור הורים</h2>
       <p>כדי להיכנס, לחצו והחזיקו את הכפתור 3 שניות.</p>
       <button className="btn btn-purple btn-lg hold" onPointerDown={start} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}>
         <span className="hold-fill" style={{ width: `${pct * 100}%` }} />
@@ -142,7 +142,7 @@ export function Parent() {
 
           <div className="grid2">
             <div className="card">
-              <h3>♟️ ארנה החשיבה</h3>
+              <h3>ארנה החשיבה</h3>
               {player.arena && Object.keys(player.arena).length ? (
                 <ul>
                   {Object.entries(player.arena).map(([id, a]) => (
@@ -153,7 +153,7 @@ export function Parent() {
               <p className="muted small">המשחק רושם כשהילד מזהה איום וחוסם אותו, או מפספס מהלך מנצח. זה נכנס לפס "לזהות איום" ו"לחשוב צעד קדימה" למעלה.</p>
             </div>
             <div className="card">
-              <h3>🤝 כפר החברים</h3>
+              <h3>כפר החברים</h3>
               {villageSkills.length ? (
                 <>
                   <p>כלים חברתיים שהילד בחר בהם לפחות פעם אחת:</p>
