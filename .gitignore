@@ -4,3 +4,6 @@ CLAUDE.local.md
 .claude/settings.local.json
 .claude/worktrees/
 playtest-shots/
+
+# The root repo ignores .claude/; Bgame ships its Claude Code project structure.
+!.claude/
