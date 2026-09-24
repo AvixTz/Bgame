@@ -2,6 +2,17 @@
 
 Versions follow `MAJOR.MINOR.PATCH`. Each release is a git tag (`v0.2.0`) with a GitHub release.
 
+## v0.5.0 - 2026-09-24 - puzzle garden
+- New portal "גן החידות" with a toy-block tower landmark.
+- Word search by category (11 categories: animals, countries, jobs, names, holidays, fruit and
+  vegetables, school, transport, body, colors, the sea) or a surprise. Levels by fixed rules:
+  8x8 two directions, 10x10 with diagonals, 12x12 all directions with decoy letters and no hints.
+  Every word appears exactly once (tested). Drag or tap-tap to select.
+- Exercise search: a board of numbers and signs; find the correct exercises left-to-right or
+  top-to-bottom. Wrong-looking-right exercises from level 2; level 3 adds multiplication. A wrong
+  pick shows the right result, no penalty.
+- `npm run story:import`: turns chapters written as plain text into story files, one per night.
+
 ## v0.4.0 - 2026-09-24 - levels, situation questions, bedtime story
 - Arena: levels 1-3 chosen by the child. The computer follows fixed rules shown on screen (no
   randomness): level 3 never loses tic-tac-toe, searches 7 moves ahead in connect four, and Hanoi

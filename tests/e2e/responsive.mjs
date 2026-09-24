@@ -82,7 +82,17 @@ for (const vp of VIEWPORTS) {
     await check('story reader'); await shot('08-story-reader');
     await page.click('text=לכל הפרקים'); await home();
   }
-  if (await enter(0.5, 'ארנה החשיבה')) {
+  if (await enter(1.05, 'גן החידות')) {
+    await click('text=תפזורת מילים'); await click('.cat >> nth=1'); await page.waitForTimeout(300);
+    await page.click('.level-picker [role=radio] >> nth=2'); await page.waitForTimeout(300);
+    await check('word search'); await shot('10-wordsearch');
+    await page.click('text=לגן החידות'); await page.click('text=לגן החידות');
+    await click('text=תפזורת תרגילים'); await page.waitForTimeout(300);
+    await page.click('.level-picker [role=radio] >> nth=2'); await page.waitForTimeout(300);
+    await check('exercise search'); await shot('11-mathsearch');
+    await page.click('text=לגן החידות'); await home();
+  }
+  if (await enter(0.3, 'ארנה החשיבה')) {
     await page.click('text=ארבע בשורה'); await page.waitForTimeout(300);
     await check('connect four'); await shot('09-c4');
     await page.click('button:has-text("לזירה")'); await home();

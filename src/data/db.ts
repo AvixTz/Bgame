@@ -27,7 +27,11 @@ export interface PlayerDoc {
   values?: Record<string, ValueStat>;
   /** Bedtime story: chapter keys ("storyId/NN") the child has read, with the day. */
   storyRead?: Record<string, string>;
+  /** Word search and exercise search. */
+  puzzles?: Partial<Record<'words' | 'math', PuzzleStat>>;
 }
+
+export interface PuzzleStat { level: number; solved: number; wonLevels: number[]; hints: number; mistakes: number; categories?: Record<string, number> }
 
 export interface ValueStat { seen: number; lastAt: number; first: 'best' | 'ok' | 'poor' }
 

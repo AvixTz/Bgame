@@ -170,6 +170,7 @@ export function Parent() {
             <ValuesSection values={player.values} />
             <StorySection read={player.storyRead} />
           </div>
+          <PuzzlesSection puzzles={player.puzzles} />
 
           <p className="privacy">🔒 כל הנתונים נשמרים רק במכשיר הזה. זו גרסה ניסיונית. הנושאים מבוססים על תוכניות הלימודים של משרד החינוך (חשבון, חינוך לשוני, מדע וטכנולוגיה, כישורי חיים) ועדיין לא עברו אישור של מורה.</p>
         </>
@@ -212,6 +213,21 @@ function StorySection({ read }: { read?: Record<string, string> }) {
           {last!.learning?.parentNote && <p className="muted">{last!.learning.parentNote}</p>}
         </>
       ) : <p className="muted">עוד לא נקראו פרקים.</p>}
+    </div>
+  );
+}
+
+function PuzzlesSection({ puzzles }: { puzzles?: import('../data/db').PlayerDoc['puzzles'] }) {
+  const w = puzzles?.words, m = puzzles?.math;
+  if (!w?.solved && !m?.solved) return null;
+  return (
+    <div className="card">
+      <h3>גן החידות</h3>
+      <ul>
+        {w?.solved ? <li>תפזורת מילים: נפתרו {w.solved}, רמה נוכחית {w.level} מתוך 3, רמזים {w.hints}</li> : null}
+        {m?.solved ? <li>תפזורת תרגילים: נפתרו {m.solved}, רמה נוכחית {m.level} מתוך 3, תרגילים שגויים שסומנו {m.mistakes}</li> : null}
+      </ul>
+      <p className="muted small">בתפזורת התרגילים יש בכוונה תרגילים שגויים. סימון של תרגיל שגוי הוא הזדמנות לבדוק חישוב, והמשחק מראה מה התוצאה הנכונה.</p>
     </div>
   );
 }

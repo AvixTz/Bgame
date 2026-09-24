@@ -512,3 +512,44 @@ button:disabled { cursor: not-allowed; }
   .story-p { font-size: calc(1.15rem * var(--story-size, 1)); }
   .story-tonight { padding: var(--s4); margin-top: var(--s3); }
 }
+
+/* ---------- puzzle garden (v0.5) ---------- */
+.world-puzzles { --hero: #E84A8A; --hero-d: #9E1F57; }
+.puzzle-ico { width: 44px; height: 44px; color: var(--hero); }
+.cat-picker h3 { text-align: center; margin: 0 0 var(--s3); }
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: var(--s2); }
+.cat { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 52px; border: 0; border-radius: var(--r-md); cursor: pointer;
+  font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); background: var(--surface-2); color: var(--ink); box-shadow: var(--clay-sm); }
+.cat:hover { transform: translateY(-2px); }
+.cat .icon { width: 18px; height: 18px; color: var(--sun-d); }
+.cat-surprise { background: var(--berry-l); }
+.puzzle-card { margin-top: var(--s3); }
+.puzzle-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); font-size: var(--fs-lg); margin-bottom: var(--s2); }
+.word-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 0; margin: 0 0 var(--s3); justify-content: center; }
+.word-list li { padding: 4px 12px; border-radius: var(--r-pill); background: var(--surface-2); font-family: var(--font-display); font-weight: 600; }
+.word-list li.got { text-decoration: line-through; opacity: .8; }
+.ws-grid, .ms-grid { --board: min(100%, 560px); display: grid; width: var(--board); margin: 0 auto var(--s3); touch-action: none; user-select: none; -webkit-user-select: none;
+  background: var(--cream); border-radius: var(--r-md); padding: 6px; box-shadow: inset 0 2px 6px rgba(30,42,74,.12); }
+.ws-grid { grid-template-columns: repeat(var(--n), 1fr); gap: 2px; }
+.ws-cell { aspect-ratio: 1; display: grid; place-items: center; border-radius: 8px; cursor: pointer;
+  font-family: var(--font-display); font-weight: 600; font-size: calc(min(100vw - 64px, 548px) / var(--n) * .6); color: var(--ink); transition: background var(--dur-fast); }
+.ms-grid { direction: ltr; aspect-ratio: 1; gap: 2px; }
+.ms-cell { display: grid; place-items: center; border-radius: 8px; font-family: var(--font-display); font-weight: 700; color: var(--ink); cursor: pointer; }
+.ms-num { font-size: calc(min(100vw - 64px, 548px) / var(--n) * .34); background: var(--surface); box-shadow: 0 2px 0 #D5DCEB; }
+.ms-op { font-size: calc(min(100vw - 64px, 548px) / var(--n) * .3); color: var(--ink-soft, #55607A); }
+.ms-op.eq { color: var(--hero-d); }
+.ms-blank { cursor: default; }
+.ws-cell.sel, .ms-cell.sel { background: var(--sun-l) !important; box-shadow: 0 0 0 2px var(--sun) inset; }
+.ws-cell.anchor, .ms-cell.anchor { background: var(--sun) !important; color: #fff; }
+.ws-cell.hint, .ms-cell.hint { animation: hint-pulse 900ms ease-in-out 3; box-shadow: 0 0 0 3px var(--hero) inset; }
+@keyframes hint-pulse { 50% { transform: scale(1.18); } }
+.ws-grid.miss { animation: shake 380ms; }
+.found.f0, .ex-list .f0, .word-list .f0 { background: #FFD6E5; } .found.f1, .ex-list .f1, .word-list .f1 { background: #D6E6FF; }
+.found.f2, .ex-list .f2, .word-list .f2 { background: #D2F5E6; } .found.f3, .ex-list .f3, .word-list .f3 { background: #FFEAC2; }
+.found.f4, .ex-list .f4, .word-list .f4 { background: #E6DCFF; } .found.f5, .ex-list .f5, .word-list .f5 { background: #FFDCCF; }
+.found.f6, .ex-list .f6, .word-list .f6 { background: #CFF2F7; } .found.f7, .ex-list .f7, .word-list .f7 { background: #F2F5C9; }
+.puzzle-note { text-align: center; background: var(--sun-l); border-radius: var(--r-md); padding: var(--s2) var(--s3); margin: 0 0 var(--s3); }
+.ex-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 0; margin: 0 0 var(--s3); font-family: var(--font-display); font-weight: 600; }
+.ex-list li { padding: 4px 12px; border-radius: var(--r-pill); }
+@media (max-width: 560px) { .puzzle-card { padding: var(--s3) var(--s2); } .ws-grid, .ms-grid { padding: 4px; } }
+@media (max-height: 520px) and (orientation: landscape) { .ws-grid, .ms-grid { --board: min(100%, 78vh); } .ws-cell { font-size: calc(78vh / var(--n) * .5); } .ms-num { font-size: calc(78vh / var(--n) * .32); } }

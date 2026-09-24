@@ -107,7 +107,7 @@ if (await enter(1.75, 'מעבדת הטבע')) {
   await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
 }
 // arena
-if (await enter(0.5, 'ארנה החשיבה')) {
+if (await enter(0.3, 'ארנה החשיבה')) {
   await shot('07-arena');
   await page.click('text=איקס עיגול'); await page.waitForTimeout(300);
   await page.click('.level-picker [role=radio] >> nth=2'); await page.waitForTimeout(200);
@@ -162,6 +162,60 @@ if (await enter(-1.75, 'כפר החברים')) {
   await shot('13c-values-end');
   await page.click('text=חזרה לכפר'); await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
 }
+// puzzle garden: solve a whole word search and exercise search by selecting the answers
+if (await enter(1.05, 'גן החידות')) {
+  await shot('13g-puzzles');
+  await page.click('text=תפזורת מילים'); await page.click('.cat >> nth=0'); await page.waitForTimeout(300);
+  const cellCenter = async (sel) => { await page.$eval('.ws-grid, .ms-grid', (e) => e.scrollIntoView({ block: 'center' })); const b = await (await page.$(sel)).boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; };
+  const words = await page.evaluate(() => [...document.querySelectorAll('.word-list li')].length);
+  // read the answers from the grid DOM: find each word by trying every straight line
+  const lines = await page.evaluate(() => {
+    const cells = [...document.querySelectorAll('.ws-cell')];
+    const n = Math.round(Math.sqrt(cells.length));
+    const L = (r, c) => cells[r * n + c]?.textContent ?? '';
+    const words = [...document.querySelectorAll('.word-list li')].map((li) => li.textContent);
+    const out = [];
+    const dirs = [[0, 1], [1, 0], [1, 1], [1, -1], [0, -1], [-1, 0], [-1, -1], [-1, 1]];
+    for (const w of words) {
+      search: for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) for (const [dr, dc] of dirs) {
+        let ok = true;
+        for (let i = 0; i < w.length; i++) { const y = r + dr * i, x = c + dc * i; if (y < 0 || x < 0 || y >= n || x >= n || L(y, x) !== w[i]) { ok = false; break; } }
+        if (ok) { out.push([`${r},${c}`, `${r + dr * (w.length - 1)},${c + dc * (w.length - 1)}`]); break search; }
+      }
+    }
+    return out;
+  });
+  for (const [i, [a, b]] of lines.entries()) {
+    const [x1, y1] = await cellCenter(`[data-cell="${a}"]`); const [x2, y2] = await cellCenter(`[data-cell="${b}"]`);
+    if (i % 2) { await page.mouse.click(x1, y1); await page.mouse.click(x2, y2); }
+    else { await page.mouse.move(x1, y1); await page.mouse.down(); await page.mouse.move(x2, y2, { steps: 6 }); await page.mouse.up(); }
+    await page.waitForTimeout(150);
+    if (i === 1) await shot('13h-wordsearch');
+  }
+  results.wordSearchSolved = lines.length === words && !!(await page.$('text=מצאת את כל המילים'));
+  await shot('13i-wordsearch-done');
+  await page.click('text=לגן החידות'); await page.click('text=לגן החידות');
+  await page.click('text=תפזורת תרגילים'); await page.waitForTimeout(300);
+  const exercises = await page.evaluate(() => {
+    const cells = [...document.querySelectorAll('.ms-cell')];
+    const n = Math.round(Math.sqrt(cells.length));
+    const T = (r, c) => cells[r * n + c].textContent.replace('−', '-').replace('×', '*');
+    const ok = (t) => { if (t.some((x) => x === '') || !/^\d+$/.test(t[0]) || !/^\d+$/.test(t[4])) return false; const e = [t[1], t[3]].filter((x) => x === '=').length; if (e !== 1) return false; const f = (a, o, b) => (o === '+' ? a + b : o === '-' ? a - b : a * b); const [a, o1, b, o2, c] = t; return o2 === '=' ? f(+a, o1, +b) === +c : +a === f(+b, o2, +c); };
+    const out = [];
+    for (let r = 0; r < n; r += 2) for (let c = 0; c + 4 < n; c += 2) if (ok([0, 1, 2, 3, 4].map((i) => T(r, c + i)))) out.push([`${r},${c}`, `${r},${c + 4}`]);
+    for (let c = 0; c < n; c += 2) for (let r = 0; r + 4 < n; r += 2) if (ok([0, 1, 2, 3, 4].map((i) => T(r + i, c)))) out.push([`${r},${c}`, `${r + 4},${c}`]);
+    return out;
+  });
+  for (const [i, [a, b]] of exercises.entries()) {
+    const [x1, y1] = await cellCenter(`[data-cell="${a}"]`); const [x2, y2] = await cellCenter(`[data-cell="${b}"]`);
+    await page.mouse.move(x1, y1); await page.mouse.down(); await page.mouse.move(x2, y2, { steps: 6 }); await page.mouse.up();
+    await page.waitForTimeout(150);
+    if (i === 1) await shot('13j-mathsearch');
+  }
+  results.mathSearchSolved = !!(await page.$('text=מצאת את כל התרגילים הנכונים'));
+  await shot('13k-mathsearch-done');
+  await page.click('text=לגן החידות'); await page.click('text=חזרה לאי'); await page.waitForTimeout(800);
+}
 // bedtime story
 if (await enter(-0.62, 'סיפור לילה')) {
   await shot('13d-story-lobby');
@@ -190,7 +244,7 @@ console.log('RESULTS', JSON.stringify(results));
 console.log('ERRORS:', errors.length ? errors.join('\n') : 'none');
 await browser.close();
 const drifts = ['driftAfterRelease', 'driftAfterReleaseOutside', 'driftAfterPortalDrag', 'driftAfterKeyUp'].map((k) => Number(results[k]));
-if (errors.length || drifts.some((d) => d > 0.1) || Number(results.joystickMoves) < 0.5 || !results.valuesRoundDone || !results.storyAnswered) {
+if (errors.length || drifts.some((d) => d > 0.1) || Number(results.joystickMoves) < 0.5 || !results.valuesRoundDone || !results.storyAnswered || !results.wordSearchSolved || !results.mathSearchSolved) {
   console.error('PLAYTEST FAILED', { drifts, errors });
   process.exit(1);
 }

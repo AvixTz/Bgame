@@ -9,7 +9,7 @@ import { setObstacles } from './obstacles';
 
 /** Every landmark sits behind its entry pad, facing the island center (local +z points to the plaza). */
 const BODY_Z = -3.2;
-const BODY_R: Record<string, number> = { mines: 2.8, library: 2.2, lab: 2.4, village: 3.4, arena: 2.9, story: 2.6 };
+const BODY_R: Record<string, number> = { mines: 2.8, library: 2.2, lab: 2.4, village: 3.4, arena: 2.9, story: 2.6, puzzles: 2.6 };
 
 const wood = { color: '#A46B3F', roughness: 0.85 } as const;
 const stone = { color: '#C9C3B8', roughness: 0.9 } as const;
@@ -172,6 +172,32 @@ function VillageBody() {
   );
 }
 
+/** A tower of toy letter blocks and a giant magnifying glass that slowly sways over it. */
+function PuzzlesBody({ def }: { def: PortalDef }) {
+  const glass = useRef<Group>(null);
+  useFrame(({ clock }) => { if (glass.current) glass.current.rotation.z = -0.5 + Math.sin(clock.elapsedTime * 0.8) * 0.12; });
+  const blocks: [number, number, number, string, number][] = [
+    [-1.1, 0.45, 0, '#FFB930', 0.2], [0, 0.45, 0.1, '#2E6BFF', -0.1], [1.1, 0.45, -0.1, '#1FC690', 0.15],
+    [-0.55, 1.35, 0, def.color, -0.2], [0.55, 1.35, 0.05, '#8A5CF6', 0.1], [0, 2.25, 0, '#FF7A59', 0.3],
+  ];
+  return (
+    <group>
+      {blocks.map(([x, y, z, color, rot], i) => (
+        <group key={i} position={[x, y, z]} rotation={[0, rot, 0]}>
+          <mesh castShadow receiveShadow><boxGeometry args={[0.9, 0.9, 0.9]} /><meshStandardMaterial color={color} roughness={0.55} /></mesh>
+          {/* a raised square on the front, like the letter face of a toy block */}
+          <mesh position={[0, 0, 0.46]}><boxGeometry args={[0.56, 0.56, 0.04]} /><meshStandardMaterial color="#FFFFFF" roughness={0.6} /></mesh>
+        </group>
+      ))}
+      <group ref={glass} position={[1.7, 2.3, 0.8]}>
+        <mesh><torusGeometry args={[0.62, 0.11, 12, 32]} /><meshStandardMaterial color={def.dark} roughness={0.4} metalness={0.3} /></mesh>
+        <mesh><circleGeometry args={[0.55, 28]} /><meshStandardMaterial color="#CFEFFF" transparent opacity={0.45} roughness={0.05} side={2} /></mesh>
+        <mesh position={[0, -1.05, 0]}><cylinderGeometry args={[0.1, 0.12, 0.9, 10]} /><meshStandardMaterial {...wood} /></mesh>
+      </group>
+    </group>
+  );
+}
+
 /** A cozy night tent under a glowing crescent moon, with a few stars bobbing above it. */
 function StoryBody({ def }: { def: PortalDef }) {
   const stars = useRef<Group>(null);
@@ -275,7 +301,7 @@ function Pad({ def }: { def: PortalDef }) {
   );
 }
 
-const SIGN_Y: Record<string, number> = { mines: 5.4, library: 5.9, lab: 5.0, village: 4.2, arena: 4.8, story: 5.6 };
+const SIGN_Y: Record<string, number> = { mines: 5.4, library: 5.9, lab: 5.0, village: 4.2, arena: 4.8, story: 5.6, puzzles: 5.4 };
 
 function Landmark({ def }: { def: PortalDef }) {
   const pos = portalPos(def);
@@ -291,6 +317,7 @@ function Landmark({ def }: { def: PortalDef }) {
         {def.id === 'village' && <VillageBody />}
         {def.id === 'arena' && <ArenaBody def={def} />}
         {def.id === 'story' && <StoryBody def={def} />}
+        {def.id === 'puzzles' && <PuzzlesBody def={def} />}
       </group>
       <Html position={[0, SIGN_Y[def.id], BODY_Z]} center distanceFactor={17} zIndexRange={[5, 0]} pointerEvents="none">
         <div className="sign" style={{ ['--sign' as string]: def.color }}><Icon className="icon" /> {def.name}</div>
