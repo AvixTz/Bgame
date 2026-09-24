@@ -2,7 +2,12 @@
 
 Versions follow `MAJOR.MINOR.PATCH`. Each release is a git tag (`v0.2.0`) with a GitHub release.
 
-## Unreleased - deployment
+## Unreleased - deployment and data server
+- Data server (server/): children sign in with name + school + 4-digit code; progress is saved on
+  the server. No route takes a player id, so a child can only reach their own data (14 isolation
+  tests + a browser end-to-end test). Runs in a sealed container: no network, read-only, own uid,
+  resource limits, reached by nginx through a unix socket only. Nightly backups, admin CLI (reset
+  code, delete, export), self-service delete in the parents' area. No npm dependencies.
 - Production deployment kit: nginx site with security headers and CSP, one-time server setup script,
   atomic release deploy over SSH with rollback, GitHub Actions deploy workflow, docs/DEPLOY.md.
 - Fonts are self-hosted (@fontsource, Hebrew + Latin subsets): no request to Google on each visit.

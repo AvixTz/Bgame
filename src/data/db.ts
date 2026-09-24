@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import type { Attempt, Grade, SkillState, StrategyId, StrategyState } from '../brain/types';
 import type { Gender } from '../core/rng';
 import type { WordProgress } from '../minigames/smarter/progress';
+import { fetchAttempts, isServerMode, pushAttempt, pushDoc } from './remote';
 
 export interface PlayerDoc {
   id: string;
@@ -88,6 +89,7 @@ export async function listPlayers(): Promise<PlayerDoc[]> {
 
 export async function savePlayer(p: PlayerDoc): Promise<void> {
   memPlayers.set(p.id, p);
+  pushDoc(p);
   if (db) {
     try { await db.players.put(structuredClone(p)); } catch { /* memory copy kept */ }
   }
@@ -106,12 +108,16 @@ export async function deletePlayer(id: string): Promise<void> {
 
 export async function addAttempt(a: Attempt): Promise<void> {
   memAttempts.push(a);
+  pushAttempt(a);
   if (db) {
     try { await db.attempts.add({ ...a }); } catch { /* memory copy kept */ }
   }
 }
 
 export async function attemptsFor(playerId: string): Promise<Attempt[]> {
+  if (isServerMode()) {
+    try { return await fetchAttempts(); } catch { /* offline: fall back to this device */ }
+  }
   if (db) {
     try { return await db.attempts.where('playerId').equals(playerId).sortBy('at'); } catch { /* fall through */ }
   }

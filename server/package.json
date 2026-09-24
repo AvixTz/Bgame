@@ -1,0 +1,12 @@
+{
+  "name": "bgame-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Bgame data server: one isolated store per child. No dependencies.",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/main.mjs",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.mjs"
+  }
+}

@@ -38,6 +38,8 @@ jobs:
       - run: npm run content:check
       - run: npm run typecheck
       - run: npm test
+      - run: npm test
+        working-directory: server
       - run: npm run build
       - name: SSH key
         env:

@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useApp } from './core/store';
-import { initDb, listPlayers } from './data/db';
+import { initDb, savePlayer } from './data/db';
+import { detectServer, fetchMe, setSyncHandlers, usedServerBefore, type ApiError } from './data/remote';
+import { Login, Offline, playerFromSession } from './ui/Login';
 import { Profiles } from './ui/Profiles';
 import { Hud } from './ui/Hud';
 import { Joystick } from './ui/Joystick';
@@ -51,14 +53,40 @@ export function App() {
   const { screen, go, toast, player, wipe } = useApp();
   const [worldOpened, setWorldOpened] = useState(false);
   useEffect(() => { if (screen === 'world') setWorldOpened(true); }, [screen]);
+  const start = async () => {
+    go('loading');
+    await initDb();
+    if (!(await detectServer())) { go(usedServerBefore() ? 'offline' : 'profiles'); return; }
+    try {
+      const s = await fetchMe();
+      const p = playerFromSession(s);
+      await savePlayer(p);
+      useApp.getState().setPlayer(p);
+      go('world');
+    } catch (e) {
+      go((e as ApiError)?.status === 401 ? 'login' : 'offline');
+    }
+  };
   useEffect(() => {
-    void initDb().then(() => listPlayers()).then(() => go('profiles'));
-  }, [go]);
+    setSyncHandlers({
+      conflict: (doc) => {
+        const st = useApp.getState();
+        if (!st.player) return;
+        st.setPlayer({ ...st.player, ...doc, id: st.player.id, nickname: st.player.nickname });
+        st.showToast('ההתקדמות עודכנה ממכשיר אחר');
+      },
+      signedOut: () => { useApp.getState().setPlayer(null); go('login'); },
+    });
+    void start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
       {screen === 'loading' && <div className="loading">טוען…</div>}
       {screen === 'profiles' && <Profiles />}
+      {screen === 'login' && <Login />}
+      {screen === 'offline' && <Offline onRetry={() => void start()} />}
       {worldOpened && <WorldScreen active={screen === 'world' && !!player} />}
       {(screen === 'mines' || screen === 'library' || screen === 'lab') && (
         <SubjectWorld key={screen} config={WORLDS[screen]} onExit={() => useApp.getState().travel('world', '#7EC8FF')} />

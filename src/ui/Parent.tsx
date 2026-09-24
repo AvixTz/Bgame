@@ -11,6 +11,7 @@ import { WORD_BY_ID } from '../minigames/smarter/wordBank';
 import { STATUS_LABEL, wordStatus, type WordStatus } from '../minigames/smarter/progress';
 import { dayKey } from '../economy/economy';
 import { deleteRecording, getRecording } from '../data/db';
+import { deleteAccount, isServerMode, type ApiError } from '../data/remote';
 
 const SUBJECTS = [
   { id: 'math', name: 'חשבון · מכרות המספרים', icon: '⛏️' },
@@ -176,6 +177,7 @@ export function Parent() {
           </div>
           <PuzzlesSection puzzles={player.puzzles} />
           <SmarterSection />
+          {isServerMode() && <ServerDataSection />}
 
           <p className="privacy">🔒 כל הנתונים נשמרים רק במכשיר הזה. זו גרסה ניסיונית. הנושאים מבוססים על תוכניות הלימודים של משרד החינוך (חשבון, חינוך לשוני, מדע וטכנולוגיה, כישורי חיים) ועדיין לא עברו אישור של מורה.</p>
         </>
@@ -285,5 +287,38 @@ function RecordingCell({ id, onDelete }: { id: number; onDelete: () => void }) {
       {url && <audio controls src={url} style={{ maxWidth: 220 }} />}
       <button className="btn btn-ghost btn-sm" onClick={onDelete}>מחיקה</button>
     </span>
+  );
+}
+
+function ServerDataSection() {
+  const { player, setPlayer, go } = useApp();
+  const [open, setOpen] = useState(false);
+  const [pin, setPin] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const remove = async () => {
+    setErr(null);
+    try {
+      await deleteAccount(pin);
+      setPlayer(null);
+      go('login');
+    } catch (e) {
+      setErr((e as ApiError)?.status === 401 ? 'הקוד לא נכון.' : 'אין חיבור לשרת כרגע.');
+    }
+  };
+  return (
+    <div className="card">
+      <h3>הנתונים בשרת</h3>
+      <p>בשרת נשמרים: השם ({player!.nickname}), בית הספר, הכיתה וההתקדמות במשחק. הקוד נשמר מוצפן. אף ילד אחר לא יכול לראות את הנתונים האלה, והם לא משותפים עם אף גורם. הקלטות קוליות נשארות רק במכשיר.</p>
+      {!open ? (
+        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>מחיקת כל הנתונים של {player!.nickname}</button>
+      ) : (
+        <div className="row" style={{ justifyContent: 'flex-start' }}>
+          <input className="input pin-input" style={{ maxWidth: 140 }} value={pin} inputMode="numeric" type="password" maxLength={4} placeholder="הקוד" onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} aria-label="הקוד של הילד" />
+          <button className="btn btn-pink btn-sm" disabled={pin.length !== 4} onClick={() => void remove()}>למחוק לצמיתות</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setOpen(false); setPin(''); }}>ביטול</button>
+          {err && <span className="login-error">{err}</span>}
+        </div>
+      )}
+    </div>
   );
 }

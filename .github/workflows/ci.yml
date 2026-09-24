@@ -21,6 +21,9 @@ jobs:
       - run: node scripts/story/validate.mjs
       - run: node scripts/smarter/validate.mjs
       - run: npm run typecheck
+      - name: Data server tests (isolation between children)
+        run: npm test
+        working-directory: server
       - run: npm test
       - run: npm run build
       - uses: actions/upload-artifact@v4

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { RefreshCw, ShoppingBag, Star, Users, Volume2, VolumeX } from 'lucide-react';
+import { isServerMode, logout } from '../data/remote';
 import { useApp } from '../core/store';
 import { PORTALS } from '../world/portals';
 import { weeklyProgress } from '../economy/economy';
@@ -58,7 +59,7 @@ export function Hud({ onEnter }: { onEnter: () => void }) {
           <button className="icon-btn" onClick={() => { sfx.tap(); setShopOpen(true); }} aria-label="חנות הדמות" title="חנות הדמות"><ShoppingBag className="icon" /></button>
           <button className="icon-btn" onClick={() => go('parent')} aria-label="אזור הורים" title="אזור הורים"><Users className="icon" /></button>
           <button className="icon-btn" onClick={() => { setMuted(!muted); setM(!muted); }} aria-label={muted ? 'הפעלת צליל' : 'השתקה'} title="צליל">{muted ? <VolumeX className="icon" /> : <Volume2 className="icon" />}</button>
-          <button className="icon-btn" onClick={() => { setPlayer(null); go('profiles'); }} aria-label="החלפת שחקן" title="החלפת שחקן"><RefreshCw className="icon" /></button>
+          <button className="icon-btn" onClick={async () => { if (isServerMode()) { await logout(); setPlayer(null); go('login'); } else { setPlayer(null); go('profiles'); } }} aria-label="החלפת שחקן" title="החלפת שחקן"><RefreshCw className="icon" /></button>
         </div>
       </div>
 

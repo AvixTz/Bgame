@@ -1,0 +1,23 @@
+# The sealed box: no network at all, read-only system, no privileges, own folder only.
+# nginx on the host reaches it through a unix socket file; nothing else can.
+services:
+  api:
+    build: .
+    image: bgame-api:latest
+    container_name: bgame-api
+    restart: unless-stopped
+    network_mode: none                  # no internet, no LAN, no other containers (n8n etc.)
+    read_only: true
+    user: "10501:${NGINX_GID:-33}"      # dedicated uid; group = nginx's group so it can use the socket
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    volumes:
+      - /srv/bgame-api/data:/data       # the only place with children's data
+      - /srv/bgame-api/run:/run/bgame   # only the socket lives here
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "3" }

@@ -617,3 +617,14 @@ button:disabled { cursor: not-allowed; }
 .pic-emoji { white-space: nowrap; letter-spacing: 3px; font-size: clamp(1.5rem, 7vw, 3.2rem); }
 .domain-grid > .card, .word-grid > .card { margin: 0; }
 @media (max-width: 480px) { .word-meaning { font-size: var(--fs-lg); } .word-explain, .mini-story p { font-size: var(--fs-md); } }
+
+/* ---------- sign in (server mode) ---------- */
+.login-card { max-width: 520px; margin-inline: auto; }
+.login-card h2 { display: flex; align-items: center; gap: var(--s2); }
+.login-card .seg button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.login-card .field span { display: inline-flex; align-items: center; gap: 6px; }
+.pin-input { letter-spacing: 10px; font-size: var(--fs-xl); text-align: center; direction: ltr; }
+.login-error { color: var(--coral-d); background: var(--coral-l); border-radius: var(--r-md); padding: var(--s2) var(--s3); margin: var(--s3) 0 0; font-weight: 600; }
+.login-ticket { display: grid; grid-template-columns: auto 1fr; gap: var(--s2) var(--s4); background: var(--cream); border: 2px dashed var(--sun); border-radius: var(--r-md); padding: var(--s4); margin: var(--s4) 0; }
+.login-ticket dt { font-weight: 700; color: var(--ink-soft); }
+.login-ticket dd { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: var(--fs-lg); }
